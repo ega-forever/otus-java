@@ -4,18 +4,21 @@ import java.util.*;
 
 public class DIYarrayList<T> implements List<T> {
 
-    private T[] array;
+    private Object[] array;
+    private int size;
 
     DIYarrayList(int size) {
-        this.array = (T[]) new Object[size];
+        this.array = new Object[size];
+        this.size = size;
     }
 
     DIYarrayList() {
-        this.array = (T[]) new Object[0];
+        this.array = new Object[10];
+        this.size = 0;
     }
 
     public int size() {
-        return this.array.length;
+        return this.size;
     }
 
     public boolean isEmpty() {
@@ -27,7 +30,7 @@ public class DIYarrayList<T> implements List<T> {
     }
 
     public Iterator<T> iterator() {
-        return new DIYarrayListIterator<T>(this);
+        return new DIYarrayListIterator<>(this);
     }
 
     public Object[] toArray() {
@@ -35,14 +38,24 @@ public class DIYarrayList<T> implements List<T> {
     }
 
     public boolean add(T item) {
-        DIYarrayList<T> list = new DIYarrayList<T>(this.array.length + 1);
-        Collections.copy(list, this);
-        list.set(this.array.length, item);
-        this.array = (T[]) list.toArray();
+
+        if (this.array.length > this.size) {
+            this.array[this.size] = item;
+            this.size++;
+            return true;
+        }
+
+        Object[] newArray = new Object[this.array.length + 10];
+
+        System.arraycopy(this.array, 0, newArray, 0, this.array.length);
+        newArray[this.array.length] = item;
+
+        this.array = newArray;
+        this.size++;
         return true;
     }
 
-    public boolean remove(Object o) { // todo validate
+    public boolean remove(Object o) {
 
         int foundIndex = this.indexOf(o);
 
@@ -55,50 +68,67 @@ public class DIYarrayList<T> implements List<T> {
 
     public boolean addAll(Collection c) {
 
-        DIYarrayList<T> newList = new DIYarrayList<T>(this.array.length + c.size());
-        Collections.copy(newList, this);
-
-        for (Object item : c) {
-            newList.add((T) item);
+        if (this.array.length > this.size + c.size()) {
+            for (Object item : c) {
+                this.array[this.size] = item;
+                this.size++;
+            }
+            this.size += c.size();
+            return true;
         }
 
-        this.array = (T[]) newList.toArray();
+
+        int size = this.array.length + c.size();
+        Object[] newArray = new Object[size];
+        System.arraycopy(this.array, 0, newArray, 0, this.array.length);
+
+
+        for (Object item : c) {
+            newArray[this.size] = item;
+        }
+
+        this.array = newArray;
+        this.size += c.size();
         return true;
     }
 
     public boolean addAll(int index, Collection c) {
 
-        DIYarrayList<T> newList = new DIYarrayList<T>(this.array.length + c.size());
-        for (int curIndex = 0; curIndex < index; curIndex++) {
-            newList.add(this.get(curIndex));
-        }
 
-        for (Object item : c) {
-            newList.add((T) item);
-        }
+        int newListSize = this.array.length > this.size + c.size() ? this.array.length : this.size + c.size();
+        Object[] newArray = new Object[newListSize + 10];
 
 
-        for (int curIndex = index; curIndex < this.array.length; curIndex++) {
-            newList.add(this.get(curIndex));
-        }
+        System.arraycopy(this.array, 0, newArray, 0, index);
+        System.arraycopy(c.toArray(), 0, newArray, index, c.size());
+        System.arraycopy(this.array, index, newArray, index + c.size(), this.array.length - (index + 1));
+
+
+        this.array = newArray;
+        this.size = newListSize;
 
         return true;
     }
 
     public void clear() {
-        this.array = (T[]) new Object[0];
+        this.array = new Object[10];
+        this.size = 0;
     }
 
     public T get(int index) {
 
-        if (index > this.array.length) {
+        if (index > this.array.length || index < 0) {
             return null;
         }
 
-        return this.array[index];
+        return (T) this.array[index];
     }
 
     public T set(int index, T item) {
+        if (index > this.array.length || index < 0) {
+            return null;
+        }
+
         this.array[index] = item;
         return item;
     }
@@ -112,17 +142,15 @@ public class DIYarrayList<T> implements List<T> {
         if (index > this.array.length - 1)
             return null;
 
-        DIYarrayList<T> newList = new DIYarrayList<T>(this.array.length - 1);
-        for (int curIndex = 0; curIndex < index; curIndex++)
-            newList.add(0, this.get(curIndex));
+        Object[] newList = new Object[this.array.length - 1];
 
-        for (int curIndex = index + 1; curIndex < this.array.length; curIndex++)
-            newList.add(curIndex - 1, this.get(curIndex));
+        T removeditem = (T) this.array[index];
 
-        T removeditem = this.array[index];
+        System.arraycopy(this.array, 0, newList, 0, index);
+        System.arraycopy(this.array, index + 1, newList, index, this.size - (index + 1));
 
-        this.array = (T[]) newList.toArray();
-
+        this.array = newList;
+        this.size--;
         return removeditem;
     }
 
@@ -156,7 +184,7 @@ public class DIYarrayList<T> implements List<T> {
 
     public List<T> subList(int fromIndex, int toIndex) {
 
-        DIYarrayList<T> list = new DIYarrayList<T>();
+        DIYarrayList<T> list = new DIYarrayList<>();
 
         for (int index = fromIndex; index < toIndex; index++) {
             list.add(this.get(index));
@@ -178,6 +206,6 @@ public class DIYarrayList<T> implements List<T> {
     }
 
     public T[] toArray(Object[] a) { // todo
-        return this.array;
+        return (T[]) this.array;
     }
 }

@@ -31,10 +31,11 @@ public class Main {
         System.out.println("removed : " + removed);
         assert nextVal.equals(list.get(0));
         System.out.println("new zero element " + list.get(0) + " width array size: " + list.size());
+        assert list.size() == itemsCount - 1;
 
 
         System.out.println("validating collections.copy()...");
-        DIYarrayList<Integer> newList = new DIYarrayList<Integer>(list.size());
+        DIYarrayList<Integer> newList = new DIYarrayList<>(list.size());
         Collections.copy(newList, list);
 
         assert newList.size() == list.size();
