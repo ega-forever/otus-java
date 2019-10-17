@@ -16,12 +16,17 @@ public class DIYarrayListIterator<T> implements ListIterator<T> {
     }
 
     public T next() {
+
+        if (this.index == this.list.size() - 1) {
+            return null;
+        }
+
         this.index++;
         return this.list.get(this.index);
     }
 
     public boolean hasPrevious() {
-        return this.index - 1 >= 0 && this.list.size() > 0;
+        return this.index - 1 >= 0 && this.list.size() > this.index;
     }
 
     public T previous() {

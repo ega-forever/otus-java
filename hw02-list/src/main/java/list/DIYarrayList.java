@@ -22,7 +22,7 @@ public class DIYarrayList<T> implements List<T> {
     }
 
     public boolean isEmpty() {
-        return this.array.length == 0;
+        return this.size() == 0;
     }
 
     public boolean contains(Object o) {
@@ -34,7 +34,10 @@ public class DIYarrayList<T> implements List<T> {
     }
 
     public Object[] toArray() {
-        return this.array;
+        Object[] array = new Object[this.array.length];
+
+        System.arraycopy(this.array, 0, array, 0, this.size);
+        return array;
     }
 
     public boolean add(T item) {
@@ -68,32 +71,26 @@ public class DIYarrayList<T> implements List<T> {
 
     public boolean addAll(Collection c) {
 
-        if (this.array.length > this.size + c.size()) {
-            for (Object item : c) {
-                this.array[this.size] = item;
-                this.size++;
-            }
-            this.size += c.size();
-            return true;
+        if (this.array.length <= this.size() + c.size()) {
+            int size = this.array.length + c.size() + 10;
+            Object[] newArray = new Object[size];
+            System.arraycopy(this.array, 0, newArray, 0, this.array.length);
+            this.array = newArray;
+
         }
-
-
-        int size = this.array.length + c.size();
-        Object[] newArray = new Object[size];
-        System.arraycopy(this.array, 0, newArray, 0, this.array.length);
-
 
         for (Object item : c) {
-            newArray[this.size] = item;
+            this.add((T) item);
         }
 
-        this.array = newArray;
-        this.size += c.size();
         return true;
     }
 
     public boolean addAll(int index, Collection c) {
 
+        if (!this.validateIndexInRange(index)) {
+            return false;
+        }
 
         int newListSize = this.array.length > this.size + c.size() ? this.array.length : this.size + c.size();
         Object[] newArray = new Object[newListSize + 10];
@@ -117,7 +114,7 @@ public class DIYarrayList<T> implements List<T> {
 
     public T get(int index) {
 
-        if (index > this.array.length || index < 0) {
+        if (!this.validateIndexInRange(index)) {
             return null;
         }
 
@@ -125,7 +122,8 @@ public class DIYarrayList<T> implements List<T> {
     }
 
     public T set(int index, T item) {
-        if (index > this.array.length || index < 0) {
+
+        if (!this.validateIndexInRange(index)) {
             return null;
         }
 
@@ -134,13 +132,19 @@ public class DIYarrayList<T> implements List<T> {
     }
 
     public void add(int index, T item) {
+
+        if (!this.validateIndexInRange(index)) {
+            return;
+        }
+
         this.set(index, item);
     }
 
     public T remove(int index) {
 
-        if (index > this.array.length - 1)
+        if (!this.validateIndexInRange(index)) {
             return null;
+        }
 
         Object[] newList = new Object[this.array.length - 1];
 
@@ -208,4 +212,9 @@ public class DIYarrayList<T> implements List<T> {
     public T[] toArray(Object[] a) { // todo
         return (T[]) this.array;
     }
+
+    private boolean validateIndexInRange(int index) {
+        return this.size() > index && index >= 0;
+    }
+
 }
