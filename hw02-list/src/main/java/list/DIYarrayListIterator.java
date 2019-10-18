@@ -12,12 +12,11 @@ public class DIYarrayListIterator<T> implements ListIterator<T> {
     }
 
     public boolean hasNext() {
-        return this.list.size() - 1 > index;
+        return this.list.validateIndexInRange(this.index + 1);
     }
 
     public T next() {
-
-        if (this.index == this.list.size() - 1) {
+        if (!this.list.validateIndexInRange(this.index + 1)) {
             return null;
         }
 
@@ -26,25 +25,26 @@ public class DIYarrayListIterator<T> implements ListIterator<T> {
     }
 
     public boolean hasPrevious() {
-        return this.index - 1 >= 0 && this.list.size() > this.index;
+        return this.list.validateIndexInRange(this.index - 1);
     }
 
     public T previous() {
-        if (this.index - 1 < 0 || this.list.size() == 0)
+        if (!this.list.validateIndexInRange(this.index - 1)) {
             return null;
+        }
         this.index--;
         return this.list.get(this.index);
     }
 
     public int nextIndex() {
-        if (this.index == this.list.size() - 1)
+        if (!this.list.validateIndexInRange(this.index + 1))
             return -1;
 
         return this.index + 1;
     }
 
     public int previousIndex() {
-        if (this.index == 0)
+        if (!this.list.validateIndexInRange(this.index - 1))
             return -1;
 
         return this.index - 1;

@@ -14,11 +14,13 @@ public class Main {
             list.add((int) (Math.random() * 100));
         }
 
+
         System.out.println("printing records with for loop...");
         for (int index = 0; index < itemsCount; index++) {
             Integer inserted = list.get(index);
             System.out.println(inserted);
         }
+
 
         System.out.println("printing records with iterator...");
         for (Integer item : list) {

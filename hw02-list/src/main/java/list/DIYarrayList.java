@@ -13,7 +13,7 @@ public class DIYarrayList<T> implements List<T> {
     }
 
     DIYarrayList() {
-        this.array = new Object[10];
+        this.array = new Object[this.getNextExpandSize()];
         this.size = 0;
     }
 
@@ -34,8 +34,7 @@ public class DIYarrayList<T> implements List<T> {
     }
 
     public Object[] toArray() {
-        Object[] array = new Object[this.array.length];
-
+        Object[] array = new Object[this.size()];
         System.arraycopy(this.array, 0, array, 0, this.size);
         return array;
     }
@@ -48,7 +47,7 @@ public class DIYarrayList<T> implements List<T> {
             return true;
         }
 
-        Object[] newArray = new Object[this.array.length + 10];
+        Object[] newArray = new Object[this.getNextExpandSize()];
 
         System.arraycopy(this.array, 0, newArray, 0, this.array.length);
         newArray[this.array.length] = item;
@@ -72,7 +71,7 @@ public class DIYarrayList<T> implements List<T> {
     public boolean addAll(Collection c) {
 
         if (this.array.length <= this.size() + c.size()) {
-            int size = this.array.length + c.size() + 10;
+            int size = c.size() + this.getNextExpandSize();
             Object[] newArray = new Object[size];
             System.arraycopy(this.array, 0, newArray, 0, this.array.length);
             this.array = newArray;
@@ -92,8 +91,8 @@ public class DIYarrayList<T> implements List<T> {
             return false;
         }
 
-        int newListSize = this.array.length > this.size + c.size() ? this.array.length : this.size + c.size();
-        Object[] newArray = new Object[newListSize + 10];
+        int newListSize = Math.max(this.array.length, this.size + c.size());
+        Object[] newArray = new Object[newListSize + this.getNextExpandSize()];
 
 
         System.arraycopy(this.array, 0, newArray, 0, index);
@@ -108,7 +107,7 @@ public class DIYarrayList<T> implements List<T> {
     }
 
     public void clear() {
-        this.array = new Object[10];
+        this.array = new Object[this.getNextExpandSize()];
         this.size = 0;
     }
 
@@ -209,12 +208,21 @@ public class DIYarrayList<T> implements List<T> {
         return false;
     }
 
-    public T[] toArray(Object[] a) { // todo
-        return (T[]) this.array;
+    public T[] toArray(Object[] a) {
+        return (T[]) this.toArray();
     }
 
-    private boolean validateIndexInRange(int index) {
+    boolean validateIndexInRange(int index) {
         return this.size() > index && index >= 0;
+    }
+
+    private int getNextExpandSize() {
+
+        if(this.array == null){
+            return 10;
+        }
+
+        return this.array.length < 10 ? this.array.length + 10 : (int) (this.array.length * 1.2);
     }
 
 }
