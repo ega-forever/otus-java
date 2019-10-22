@@ -1,5 +1,7 @@
 package list;
 
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 
 public class Main {
@@ -61,6 +63,29 @@ public class Main {
             assert list.get(index) > prevItem;
             prevItem = list.get(index);
         }
+
+        System.out.println("validating collection.addAll()...");
+
+        ArrayList<Integer> newList2 = new ArrayList<>(Arrays.asList(12, 14));
+        int sizeBeforeAddAll = list.size();
+
+        list.addAll(newList2);
+
+        assert sizeBeforeAddAll + 2 == list.size();
+        assert list.get(0) == 12;
+        assert list.get(1) == 14;
+
+
+        System.out.println("validating collection.addAll(index)...");
+
+        ArrayList<Integer> newList3 = new ArrayList<>(Arrays.asList(18, 22));
+        int sizeBeforeAddAllWithIndex = list.size();
+
+        list.addAll(2, newList3);
+
+        assert sizeBeforeAddAllWithIndex + 2 == list.size();
+        assert list.get(2) == 18;
+        assert list.get(3) == 22;
 
     }
 

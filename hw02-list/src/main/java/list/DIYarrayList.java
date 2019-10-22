@@ -4,6 +4,9 @@ import java.util.*;
 
 public class DIYarrayList<T> implements List<T> {
 
+    private static final int INITIAL_ARRAY_GROW_SIZE = 10;
+    private static final double INITIAL_ARRAY_GROW_MULTIPLIER = 1.2;
+
     private Object[] array;
     private int size;
 
@@ -43,16 +46,14 @@ public class DIYarrayList<T> implements List<T> {
 
         if (this.array.length > this.size) {
             this.array[this.size] = item;
-            this.size++;
-            return true;
+        } else {
+            Object[] newArray = new Object[this.getNextExpandSize()];
+
+            System.arraycopy(this.array, 0, newArray, 0, this.array.length);
+            newArray[this.array.length] = item;
+            this.array = newArray;
         }
 
-        Object[] newArray = new Object[this.getNextExpandSize()];
-
-        System.arraycopy(this.array, 0, newArray, 0, this.array.length);
-        newArray[this.array.length] = item;
-
-        this.array = newArray;
         this.size++;
         return true;
     }
@@ -218,11 +219,11 @@ public class DIYarrayList<T> implements List<T> {
 
     private int getNextExpandSize() {
 
-        if(this.array == null){
+        if (this.array == null) {
             return 10;
         }
 
-        return this.array.length < 10 ? this.array.length + 10 : (int) (this.array.length * 1.2);
+        return this.array.length < DIYarrayList.INITIAL_ARRAY_GROW_SIZE ? this.array.length + DIYarrayList.INITIAL_ARRAY_GROW_SIZE : (int) (this.array.length * DIYarrayList.INITIAL_ARRAY_GROW_MULTIPLIER);
     }
 
 }
