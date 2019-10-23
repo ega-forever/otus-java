@@ -55,12 +55,12 @@ public class Main {
         Integer prevItem = null;
         for (int index = 0; index < list.size(); index++) {
 
-            if(index == 0) {
+            if (index == 0) {
                 prevItem = list.get(index);
                 continue;
             }
 
-            assert list.get(index) > prevItem;
+            assert list.get(index) >= prevItem;
             prevItem = list.get(index);
         }
 
@@ -72,8 +72,8 @@ public class Main {
         list.addAll(newList2);
 
         assert sizeBeforeAddAll + 2 == list.size();
-        assert list.get(0) == 12;
-        assert list.get(1) == 14;
+        assert list.get(sizeBeforeAddAll) == 12;
+        assert list.get(sizeBeforeAddAll + 1) == 14;
 
 
         System.out.println("validating collection.addAll(index)...");
@@ -86,6 +86,17 @@ public class Main {
         assert sizeBeforeAddAllWithIndex + 2 == list.size();
         assert list.get(2) == 18;
         assert list.get(3) == 22;
+
+        System.out.println("validating collections.addAll()...");
+
+        int sizeBeforeAddByCollections = list.size();
+
+        Collections.addAll(list, 185, 221);
+
+        assert sizeBeforeAddByCollections + 2 == list.size();
+        assert list.get(sizeBeforeAddByCollections) == 185;
+        assert list.get(sizeBeforeAddByCollections + 1) == 221;
+
 
     }
 

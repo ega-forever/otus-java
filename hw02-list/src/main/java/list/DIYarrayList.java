@@ -43,17 +43,13 @@ public class DIYarrayList<T> implements List<T> {
     }
 
     public boolean add(T item) {
-
-        if (this.array.length > this.size) {
-            this.array[this.size] = item;
-        } else {
+        if (this.array.length == this.size) {
             Object[] newArray = new Object[this.getNextExpandSize()];
-
             System.arraycopy(this.array, 0, newArray, 0, this.array.length);
-            newArray[this.array.length] = item;
             this.array = newArray;
         }
 
+        this.array[this.size] = item;
         this.size++;
         return true;
     }
