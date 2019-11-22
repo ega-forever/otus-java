@@ -2419,4 +2419,7 @@ VMOptions: ```-Xmx128m -Xms128m -Xloggc:gc_cms.log -XX:+PrintGCDetails -XX:+UseC
 | throughput | 98,88% | 98,06% | 97,23% | 96,95%
 | uptime | 1m 26s | 1m 19s | 1m 20s | 1m 18s
 
-Conclusion: the best GC for this task is G1 due to high throughput and low pause time
+Conclusion: the best GC for this task is G1 due to high throughput and low pause time. However, the 
+most important parameter for this task, is an ability to utilize resources fast, in order to avoid the 
+out of memory exception. Based on this condition, we should rely on uptime parameter. The G1 shows the 
+best uptime among other GC collectors. 
