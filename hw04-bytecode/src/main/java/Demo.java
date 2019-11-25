@@ -1,8 +1,8 @@
-public class main {
+public class Demo {
 
     public static void main (String[] args){
 
-        IUserAction userAction = IoC.createUserAction();
+        IUserAction userAction = (IUserAction) IoC.create(new UserAction());
         userAction.myAction("my action");
 
 
