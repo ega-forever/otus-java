@@ -1,4 +1,5 @@
 public interface IUserAction {
 
-    public void myAction(String name);
+    public void myAction(String name, String type);
+    public void myActionEmpty();
 }

@@ -13,6 +13,7 @@
         <module>hw02-list</module>
         <module>hw3-gc</module>
         <module>hw04-bytecode</module>
+        <module>hw05-annotations</module>
     </modules>
 
     <dependencies>

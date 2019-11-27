@@ -44,7 +44,7 @@ class IoC {
             Method clazzMethod = this.methodsMap.get(LoggerInvocationHandler.toShortString(method));
 
             if (clazzMethod.getAnnotation(Log.class) != null) {
-                System.out.println("executed method: " + method.getName() + ", param: " + args[0]);
+                System.out.println("executed method: " + method.getName() + ", params: " + Arrays.asList(args));
             }
 
             return method.invoke(this.instance, args);
