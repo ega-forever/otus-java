@@ -1,11 +1,10 @@
 package ru.otus.hw05;
 
-import ru.otus.jtest.annotations.AfterAll;
-import ru.otus.jtest.annotations.BeforeAll;
-import ru.otus.jtest.annotations.Test;
+import ru.otus.jtest.annotations.*;
 
 public class CalculatorTest {
 
+    private Calculator calculator = new Calculator();
 
     @BeforeAll
     void beforeClass() {
@@ -17,17 +16,31 @@ public class CalculatorTest {
         System.out.println("after class");
     }
 
+    @BeforeEach
+    void init() {
+        System.out.println("init new calculator instance");
+        this.calculator = new Calculator();
+    }
+
 
     @Test
     void add() {
-        Calculator calculator = new Calculator();
+
         calculator.add(2);
 
-        if(calculator.getSum() != 2){
+        if (calculator.getSum() != 2) {
             throw new Error("add result");
         }
+    }
 
-        // assertEquals(x + y, result, "add result");
+    @Test
+    void subtract() {
+        Calculator calculator = new Calculator();
+        calculator.subtract(2);
+
+        if (calculator.getSum() != -2) {
+            throw new Error("add result");
+        }
     }
 
 
