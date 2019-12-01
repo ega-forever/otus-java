@@ -14,6 +14,7 @@
         <module>hw3-gc</module>
         <module>hw04-bytecode</module>
         <module>hw05-annotations</module>
+        <module>hw06-atm</module>
     </modules>
 
     <dependencies>
