@@ -19,51 +19,37 @@ public class TestRunner {
     private Constructor<?> constructor;
 
 
-    public TestRunner(String className) throws ClassNotFoundException, NoSuchMethodException, IllegalAccessException, InstantiationException, InvocationTargetException {
+    public TestRunner(String className) throws ClassNotFoundException, NoSuchMethodException {
         this.testClass = Thread.currentThread().getContextClassLoader().loadClass(className);
         this.setMethods();
     }
 
-    private void setMethods() throws NoSuchMethodException, IllegalAccessException, InvocationTargetException, InstantiationException {
+    private void setMethods() throws NoSuchMethodException {
 
         this.constructor = this.testClass.getConstructor();
-        Object testInstance = this.constructor.newInstance();
 
         for (Method method : this.testClass.getDeclaredMethods()) {
 
+            method.setAccessible(true);
+
             if (method.getAnnotation(BeforeEach.class) != null) {
                 beforeEachMethods.add(method);
-                if(!method.canAccess(testInstance)){
-                    method.setAccessible(true);
-                }
             }
 
             if (method.getAnnotation(AfterEach.class) != null) {
                 afterEachMethods.add(method);
-                if(!method.canAccess(testInstance)){
-                    method.setAccessible(true);
-                }
             }
 
             if (method.getAnnotation(BeforeAll.class) != null) {
                 beforeAllMethods.add(method);
-                if(!method.canAccess(testInstance)){
-                    method.setAccessible(true);
-                }
             }
 
             if (method.getAnnotation(AfterAll.class) != null) {
                 afterAllMethods.add(method);
-                if(!method.canAccess(testInstance)){
-                    method.setAccessible(true);
-                }
             }
 
             if (method.getAnnotation(Test.class) != null) {
                 testMethods.add(method);
-                if(!method.canAccess(testInstance)){
-                    method.setAccessible(true);
-                }
             }
 
         }
@@ -71,18 +57,26 @@ public class TestRunner {
     }
 
     public void run() throws IllegalAccessException, InvocationTargetException, InstantiationException {
-        Object testInstance = this.constructor.newInstance();
 
         for (Method beforeAll : beforeAllMethods) {
-            beforeAll.setAccessible(true);
-
-            beforeAll.invoke(testInstance);
+            beforeAll.invoke(null);
+            try {
+                beforeAll.invoke(null);
+            } catch (Exception e) {
+                System.out.println("(beforeAll) failed with error: " + e.toString());
+            }
         }
 
         for (Method test : testMethods) {
 
+            Object testInstance = this.constructor.newInstance();
+
             for (Method before : beforeEachMethods) {
-                before.invoke(testInstance);
+                try {
+                    before.invoke(testInstance);
+                } catch (Exception e) {
+                    System.out.println("(before) test " + test.getName() + " failed with error: " + e.toString());
+                }
             }
 
             try {
@@ -94,14 +88,22 @@ public class TestRunner {
 
 
             for (Method after : afterEachMethods) {
-                after.invoke(testInstance);
+                try {
+                    after.invoke(testInstance);
+                } catch (Exception e) {
+                    System.out.println("(after) test " + test.getName() + " failed with error: " + e.toString());
+                }
             }
 
         }
 
 
         for (Method afterAll : afterAllMethods) {
-            afterAll.invoke(testInstance);
+            try {
+                afterAll.invoke(null);
+            } catch (Exception e) {
+                System.out.println("(beforeAll) failed with error: " + e.toString());
+            }
         }
 
 
