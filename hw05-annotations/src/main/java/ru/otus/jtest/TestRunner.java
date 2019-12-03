@@ -3,7 +3,6 @@ package ru.otus.jtest;
 import ru.otus.jtest.annotations.*;
 
 import java.lang.reflect.Constructor;
-import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.List;
@@ -56,45 +55,43 @@ public class TestRunner {
 
     }
 
-    public void run() throws IllegalAccessException, InvocationTargetException, InstantiationException {
+    public void run() {
 
-        for (Method beforeAll : beforeAllMethods) {
-            beforeAll.invoke(null);
-            try {
+
+        try {
+            for (Method beforeAll : beforeAllMethods) {
                 beforeAll.invoke(null);
-            } catch (Exception e) {
-                System.out.println("(beforeAll) failed with error: " + e.toString());
             }
-        }
 
-        for (Method test : testMethods) {
+            for (Method test : testMethods) {
 
-            Object testInstance = this.constructor.newInstance();
+                Object testInstance = this.constructor.newInstance();
 
-            for (Method before : beforeEachMethods) {
                 try {
-                    before.invoke(testInstance);
+                    for (Method before : beforeEachMethods) {
+                        before.invoke(testInstance);
+                    }
+
+                    test.invoke(testInstance);
+                    System.out.println("test " + test.getName() + " has passed");
+
                 } catch (Exception e) {
-                    System.out.println("(before) test " + test.getName() + " failed with error: " + e.toString());
+                    System.out.println("test " + test.getName() + " has failed: " + e.toString());
                 }
-            }
-
-            try {
-                test.invoke(testInstance);
-                System.out.println("test " + test.getName() + " has passed");
-            } catch (Exception e) {
-                System.out.println("test " + test.getName() + " has not passed: " + e.toString());
-            }
 
 
-            for (Method after : afterEachMethods) {
-                try {
-                    after.invoke(testInstance);
-                } catch (Exception e) {
-                    System.out.println("(after) test " + test.getName() + " failed with error: " + e.toString());
+                for (Method after : afterEachMethods) {
+                    try {
+                        after.invoke(testInstance);
+                    } catch (Exception e) {
+                        System.out.println("(after) test " + test.getName() + " failed with error: " + e.toString());
+                    }
                 }
+
             }
 
+        } catch (Exception e) {
+            System.out.println("failed with error: " + e.toString());
         }
 
 
