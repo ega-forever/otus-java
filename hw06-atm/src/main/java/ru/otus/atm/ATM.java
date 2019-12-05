@@ -1,32 +1,46 @@
 package ru.otus.atm;
 
+import ru.otus.atm.constants.CashType;
+import ru.otus.atm.constants.DrawStatus;
 import ru.otus.atm.controllers.CashController;
-import ru.otus.atm.models.FiftyRubleBankNote;
-import ru.otus.atm.models.HundredRubleBankNote;
-import ru.otus.atm.models.TenRubleBankNote;
+import ru.otus.atm.exceptions.ATMException;
+import ru.otus.atm.interfaces.Currency;
+import ru.otus.atm.interfaces.IATM;
+import ru.otus.atm.models.BankNote;
+
+import java.util.TreeMap;
 
 public class ATM {
 
     public static void main(String args[]) {
 
 
-        CashController cashController = new CashController();
+        IATM cashController = new CashController();
 
-        TenRubleBankNote tenRubleBankNotes = new TenRubleBankNote(1L);
-        FiftyRubleBankNote fiftyRubleBankNotes = new FiftyRubleBankNote(20L);
-        HundredRubleBankNote hundredRubleBankNotes = new HundredRubleBankNote(5L);
+        BankNote tenBankNotes = new BankNote(CashType.TEN_RUBLES, 1L);
+        BankNote fiftyBankNotes = new BankNote(CashType.FIFTY_RUBLES, 20L);
+        BankNote hundredBankNotes = new BankNote(CashType.HUNDRED_RUBLES, 5L);
 
-        cashController.insert(tenRubleBankNotes);
-        cashController.insert(fiftyRubleBankNotes);
-        cashController.insert(hundredRubleBankNotes);
+        cashController.insert(tenBankNotes);
+        cashController.insert(fiftyBankNotes);
+        cashController.insert(hundredBankNotes);
 
         Long currentTotal = cashController.getTotal();
-        Long drawSum = 760L;
 
-        boolean isDrawn = cashController.draw(drawSum);
-        Long newAmount = cashController.getTotal();
+        try {
+            Long drawSum = 760L;
+            TreeMap<CashType, Currency> banknotes = cashController.draw(drawSum);
+            System.out.println(banknotes);
 
-        assert isDrawn && currentTotal - 760L == newAmount;
+            Long newAmount = cashController.getTotal();
+            System.out.println("sum before draw: " + currentTotal);
+            System.out.println("sum after draw: " + newAmount);
+            System.out.println("draw amount: " + drawSum);
+
+        } catch (ATMException e) {
+            System.out.println("draw failed. Reason: " + e.toString());
+        }
+
     }
 
 
