@@ -1,18 +1,17 @@
 package ru.otus.atm.models;
 
 import ru.otus.atm.constants.CashType;
-import ru.otus.atm.interfaces.Currency;
 
-public class BankNote implements Currency {
+public class BankCellImpl implements ru.otus.atm.interfaces.BankCell {
 
     private Long amount = 0L;
     private CashType cashType;
 
-    public BankNote(CashType cashType) {
+    public BankCellImpl(CashType cashType) {
         this.cashType = cashType;
     }
 
-    public BankNote(CashType cashType, Long amount) {
+    public BankCellImpl(CashType cashType, Long amount) {
         this.cashType = cashType;
         this.amount = amount;
     }
