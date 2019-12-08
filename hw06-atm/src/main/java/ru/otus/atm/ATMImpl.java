@@ -3,13 +3,14 @@ package ru.otus.atm;
 import ru.otus.atm.constants.CashType;
 import ru.otus.atm.constants.DrawStatus;
 import ru.otus.atm.exceptions.ATMException;
+import ru.otus.atm.interfaces.ATM;
 import ru.otus.atm.interfaces.BankCell;
 import ru.otus.atm.models.BankCellImpl;
 
 import java.util.Comparator;
 import java.util.TreeMap;
 
-public class ATM implements ru.otus.atm.interfaces.ATM {
+public class ATMImpl implements ATM {
 
     private TreeMap<CashType, BankCell> bankNotesCellsByType = new TreeMap<>(Comparator.reverseOrder());
 
@@ -73,6 +74,23 @@ public class ATM implements ru.otus.atm.interfaces.ATM {
         return drawnBanknotes;
     }
 
+    @Override
+    public TreeMap<CashType, Long> getTotalByType() {
+        TreeMap<CashType, Long> banknotes = new TreeMap<>();
+
+        for(BankCell cell: this.bankNotesCellsByType.values()){
+            banknotes.put(cell.getType(), cell.getAmount());
+        }
+
+        return banknotes;
+    }
+
+    @Override
+    public void reset() {
+        this.bankNotesCellsByType = new TreeMap<>(Comparator.reverseOrder());
+    }
+
+    @Override
     public Long getTotal() {
         return this.bankNotesCellsByType.values().stream()
                 .map(bankNotesBank -> bankNotesBank.getAmount() * bankNotesBank.getType().getCashMultiplier())
