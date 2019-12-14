@@ -1,6 +1,6 @@
 package ru.otus.main;
 
-import ru.otus.atm.ATM;
+import ru.otus.atm.ATMImpl;
 import ru.otus.atm.constants.CashType;
 import ru.otus.atm.exceptions.ATMException;
 
@@ -10,7 +10,7 @@ public class Starter {
 
     public static void main(String args[]){
 
-        ATM instance = new ATM();
+        ATMImpl instance = new ATMImpl();
 
         instance.insert(CashType.TEN_RUBLES, 1L);
         instance.insert(CashType.FIFTY_RUBLES, 20L);

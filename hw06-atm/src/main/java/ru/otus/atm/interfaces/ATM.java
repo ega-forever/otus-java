@@ -11,10 +11,15 @@ public interface ATM {
     void insert(CashType cash, Long amount);
 
     /** get total left balance **/
-    public Long getTotal();
+    Long getTotal();
 
     /** draw some money
      * @return**/
-    public TreeMap<CashType, Long> draw(Long amount) throws ATMException;
+    TreeMap<CashType, Long> draw(Long amount) throws ATMException;
+
+    TreeMap<CashType, Long> getTotalByType();
+
+    void reset();
+
 
 }
