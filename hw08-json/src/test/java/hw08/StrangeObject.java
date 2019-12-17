@@ -1,4 +1,4 @@
-package ru.otus.main;
+package hw08;
 
 import java.util.ArrayList;
 import java.util.HashMap;
