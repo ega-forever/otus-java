@@ -2,6 +2,7 @@ package ru.otus.orm.constants;
 
 public enum Types {
     INTEGER("int"),
+    BIGINTEGER("bigint"),
     LONG("long"),
     VARCHAR("varchar");
 

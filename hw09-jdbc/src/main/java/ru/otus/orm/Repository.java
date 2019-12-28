@@ -1,13 +1,13 @@
 package ru.otus.orm;
 
-import ru.otus.orm.annotations.Id;
-import ru.otus.orm.annotations.Int;
-import ru.otus.orm.annotations.Table;
-import ru.otus.orm.annotations.Varchar;
+import ru.otus.orm.annotations.*;
 import ru.otus.orm.constants.Types;
 
 import java.lang.reflect.Field;
-import java.sql.*;
+import java.math.BigInteger;
+import java.sql.Connection;
+import java.sql.DriverManager;
+import java.sql.SQLException;
 import java.util.*;
 
 public class Repository<T> {
@@ -32,9 +32,9 @@ public class Repository<T> {
 
         for (Field field : clazz.getDeclaredFields()) {
 
-            if (field.getAnnotation(Id.class) != null) {
-                this.fields.put(field.getName(), Types.LONG.getType());
-                this.fieldSizes.put(field.getName(), 10);
+            if (field.getAnnotation(BigInt.class) != null) {
+                this.fields.put(field.getName(), Types.BIGINTEGER.getType());
+                this.fieldSizes.put(field.getName(), field.getAnnotation(BigInt.class).size());
             }
 
             if (field.getAnnotation(Int.class) != null) {
@@ -142,17 +142,6 @@ public class Repository<T> {
             }
 
             params.add(val.toString());
-
-          /*      if (fieldEntry.getValue().equals(Types.INTEGER.getType())) {
-                   // pst.setInt(paramIndex, (Integer) val);
-                }
-
-                if (fieldEntry.getValue().equals(Types.VARCHAR.getType())) {
-                    pst.setString(paramIndex, (String) val);
-                }*/
-
-            //  paramIndex++;
-
         }
 
         Optional<Map.Entry<String, String>> optionalIdField = this.fields.entrySet().stream().filter(elem -> {
@@ -184,6 +173,10 @@ public class Repository<T> {
 
         if (field.getType().equals(Integer.class)) {
             field.set(object, Integer.parseInt(strId));
+        }
+
+        if (field.getType().equals(BigInteger.class)) {
+            field.set(object, new BigInteger(strId));
         }
 
         connection.close();
@@ -247,17 +240,6 @@ public class Repository<T> {
             }
 
             params.add(val.toString());
-
-           /* if (fieldEntry.getValue().equals(Types.INTEGER.getType())) {
-                pst.setInt(paramIndex, (Integer) val);
-            }
-
-            if (fieldEntry.getValue().equals(Types.VARCHAR.getType())) {
-                pst.setString(paramIndex, (String) val);
-            }*/
-
-            //   paramIndex++;
-
         }
 
         params.add(primaryId.toString());
@@ -268,7 +250,7 @@ public class Repository<T> {
         connection.close();
     }
 
-    public <T> T load(long id, Class<T> clazz) throws Exception {
+    public <T> T load(Object id, Class<T> clazz) throws Exception {
 
         Connection connection = DriverManager.getConnection(this.URL);
         StringBuilder sql = new StringBuilder("SELECT  ");
@@ -307,8 +289,6 @@ public class Repository<T> {
 
         sql.append(optionalIdField.get().getKey()).append(" = ?");
 
-        System.out.println(sql.toString());
-
         HashMap<String, String> map = this.dbExecutor.selectRecord(connection, sql.toString(), id, this.fields.keySet());
 
         T object = clazz.newInstance();
@@ -326,6 +306,10 @@ public class Repository<T> {
 
             if (field.getType().equals(Integer.class)) {
                 field.set(object, Integer.parseInt(map.get(entrySet.getKey())));
+            }
+
+            if (field.getType().equals(BigInteger.class)) {
+                field.set(object, new BigInteger(map.get(entrySet.getKey())));
             }
 
         }

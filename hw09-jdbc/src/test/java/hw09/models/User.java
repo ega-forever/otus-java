@@ -1,4 +1,4 @@
-package ru.otus.main.models;
+package hw09.models;
 
 import ru.otus.orm.annotations.Id;
 import ru.otus.orm.annotations.Int;
@@ -9,6 +9,7 @@ import ru.otus.orm.annotations.Varchar;
 public class User {
 
     @Id
+    @Int(size = 20)
     public Integer id;
 
     @Varchar(size = 255)

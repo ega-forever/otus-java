@@ -66,9 +66,9 @@ public class DbExecutor<T> {
     }
 
 
-    public HashMap<String, String> selectRecord(Connection connection, String sql, long id, Set<String> fields) throws SQLException {
+    public HashMap<String, String> selectRecord(Connection connection, String sql, Object id, Set<String> fields) throws SQLException {
         try (PreparedStatement pst = connection.prepareStatement(sql)) {
-            pst.setLong(1, id);
+            pst.setString(1, id.toString());
             try (ResultSet rs = pst.executeQuery()) {
                 if (rs.next()) {
 
