@@ -6,8 +6,10 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Savepoint;
 import java.sql.Statement;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 import java.util.function.Function;
 
 import org.slf4j.Logger;
@@ -64,11 +66,20 @@ public class DbExecutor<T> {
     }
 
 
-    public Optional<T> selectRecord(Connection connection, String sql, long id, Function<ResultSet, T> rsHandler) throws SQLException {
+    public HashMap<String, String> selectRecord(Connection connection, String sql, long id, Set<String> fields) throws SQLException {
         try (PreparedStatement pst = connection.prepareStatement(sql)) {
             pst.setLong(1, id);
             try (ResultSet rs = pst.executeQuery()) {
-                return Optional.ofNullable(rsHandler.apply(rs));
+                if (rs.next()) {
+
+                    HashMap<String, String> map = new HashMap<>();
+
+                    for (String fieldName : fields) {
+                        map.put(fieldName, rs.getString(fieldName));
+                    }
+                    return map;
+                }
+                return null;
             }
         }
     }

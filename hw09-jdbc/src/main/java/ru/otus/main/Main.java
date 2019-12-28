@@ -37,6 +37,9 @@ public class Main {
         newUser.name = "test22";
        userRepository.update(newUser);
 
+       User queriedUser = userRepository.load(newUser.id, User.class);
+       logger.info("queried user:{}", queriedUser);
+
 /*
         Optional<User> user = executor.selectRecord(connection, "select id, name from user where id  = ?", userId, resultSet -> {
             try {

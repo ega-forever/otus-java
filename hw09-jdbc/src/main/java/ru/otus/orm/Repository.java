@@ -178,11 +178,11 @@ public class Repository<T> {
 
         Field field = object.getClass().getDeclaredField(optionalIdField.get().getKey());
 
-        if(field.getType().equals(Long.class)){
+        if (field.getType().equals(Long.class)) {
             field.set(object, Long.parseLong(strId));
         }
 
-        if(field.getType().equals(Integer.class)){
+        if (field.getType().equals(Integer.class)) {
             field.set(object, Integer.parseInt(strId));
         }
 
@@ -230,7 +230,6 @@ public class Repository<T> {
             throw new Exception("no primary field");
         }
 
-        System.out.println(optionalIdField.get().getKey());
         Field primaryIdField = object.getClass().getDeclaredField(optionalIdField.get().getKey());
         Object primaryId = primaryIdField.get(object);
 
@@ -269,12 +268,12 @@ public class Repository<T> {
         connection.close();
     }
 
-  /*  public void load(Connection connection, long id, Class<T> clazz) throws Exception {
+    public <T> T load(long id, Class<T> clazz) throws Exception {
 
+        Connection connection = DriverManager.getConnection(this.URL);
         StringBuilder sql = new StringBuilder("SELECT  ");
 
         Iterator<Map.Entry<String, String>> tableFieldIterator = this.fields.entrySet().iterator();
-
 
         while (tableFieldIterator.hasNext()) {
 
@@ -288,7 +287,7 @@ public class Repository<T> {
 
         }
 
-        sql.append(" FROM ").append(this.tableName).append("WHERE ");
+        sql.append(" FROM ").append(this.tableName).append(" WHERE ");
 
         Optional<Map.Entry<String, String>> optionalIdField = this.fields.entrySet().stream().filter(elem -> {
             try {
@@ -299,39 +298,42 @@ public class Repository<T> {
             } catch (NoSuchFieldException e) {
                 e.printStackTrace();
             }
-
             return false;
         }).findFirst();
 
-        if(optionalIdField.isEmpty()){
+        if (optionalIdField.isEmpty()) {
             throw new Exception("no primary field");
         }
 
-
-        System.out.println(optionalIdField.get().getKey());
         sql.append(optionalIdField.get().getKey()).append(" = ?");
 
         System.out.println(sql.toString());
 
-        Savepoint savePoint = connection.setSavepoint("savePointName");
+        HashMap<String, String> map = this.dbExecutor.selectRecord(connection, sql.toString(), id, this.fields.keySet());
 
-        try (PreparedStatement pst = connection.prepareStatement(sql.toString(), Statement.RETURN_GENERATED_KEYS)) {
+        T object = clazz.newInstance();
 
-            pst.setLong(1, id);
+        for (Map.Entry<String, String> entrySet : this.fields.entrySet()) {
+            Field field = clazz.getField(entrySet.getKey());
 
-            try (ResultSet rs = pst.executeQuery()) {
-                return Optional.ofNullable(rsHandler.apply(rs));
+            if (field.getType().equals(Long.class)) {
+                field.set(object, Long.parseLong(map.get(entrySet.getKey())));
             }
 
-        } catch (SQLException ex) {
-            if (ex.getClass().equals(SQLException.class))
-                connection.rollback(savePoint);
+            if (field.getType().equals(String.class)) {
+                field.set(object, map.get(entrySet.getKey()));
+            }
 
-            logger.error(ex.getMessage(), ex);
-            throw ex;
+            if (field.getType().equals(Integer.class)) {
+                field.set(object, Integer.parseInt(map.get(entrySet.getKey())));
+            }
+
         }
+
+        return object;
+
+
     }
-*/
 
 
 }
