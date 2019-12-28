@@ -28,7 +28,7 @@ public class MainTest {
         strangeObject.addToList(188);
         strangeObject.addToMap("super_key", true);
         String json = gson.toJson(strangeObject);
-        
+
         Jsoner jsoner = new Jsoner();
 
         String json2 = jsoner.toJSON(strangeObject);
