@@ -3,26 +3,27 @@ package ru.otus.orm;
 import ru.otus.orm.annotations.*;
 import ru.otus.orm.constants.Types;
 
+import javax.sql.DataSource;
 import java.lang.reflect.Field;
 import java.math.BigInteger;
 import java.sql.Connection;
-import java.sql.DriverManager;
 import java.sql.SQLException;
 import java.util.*;
 
-public class Repository<T> {
+public class RepositoryImpl<T> {
 
     private Map<String, String> fields = new HashMap<>();
     private Map<String, Integer> fieldSizes = new HashMap<>();
     private String tableName;
     private Class<T> clazz;
     private DbExecutor<T> dbExecutor;
-    private String URL;
+    private DataSource dataSource;
+    private Field idField;
 
-    public Repository(Class<T> clazz, String URL) {
+    public RepositoryImpl(Class<T> clazz, DbExecutor<T> dbExecutor, DataSource dataSource) {
 
-        this.dbExecutor = new DbExecutor<T>();
-        this.URL = URL;
+        this.dbExecutor = dbExecutor;
+        this.dataSource = dataSource;
 
         this.clazz = clazz;
         this.tableName = clazz.getAnnotation(Table.class) != null ?
@@ -47,12 +48,16 @@ public class Repository<T> {
                 this.fieldSizes.put(field.getName(), field.getAnnotation(Varchar.class).size());
             }
 
+            if (field.getAnnotation(Id.class) != null) {
+                this.idField = field;
+            }
+
         }
     }
 
 
     public void sync() throws SQLException, NoSuchFieldException {
-        Connection connection = DriverManager.getConnection(this.URL);
+        Connection connection = this.dataSource.getConnection();
         StringBuilder sql = new StringBuilder("CREATE TABLE " + this.tableName + " (\n");
         for (Map.Entry<String, String> field : this.fields.entrySet()) {
             sql.append(field.getKey()).append(" ").append(field.getValue());
@@ -63,7 +68,7 @@ public class Repository<T> {
 
                 Field f = this.clazz.getDeclaredField(field.getKey());
 
-                if (f.getAnnotation(Id.class) != null) {
+                if (f.equals(this.idField)) {
                     sql.append(" auto_increment,\n");
 
                 } else {
@@ -85,7 +90,7 @@ public class Repository<T> {
 
     public void insert(T object) throws Exception {
 
-        Connection connection = DriverManager.getConnection(this.URL);
+        Connection connection = this.dataSource.getConnection();
         StringBuilder sql = new StringBuilder("INSERT INTO " + this.tableName + " (\n");
 
         Iterator<Map.Entry<String, String>> tableFieldIterator = this.fields.entrySet().iterator();
@@ -95,7 +100,7 @@ public class Repository<T> {
             Map.Entry<String, String> entry = tableFieldIterator.next();
             Field field = object.getClass().getDeclaredField(entry.getKey());
 
-            if (field.getAnnotation(Id.class) != null && field.get(object) == null) {
+            if (field.equals(this.idField) && field.get(object) == null) {
                 continue;
             }
 
@@ -116,7 +121,7 @@ public class Repository<T> {
 
             Field field = object.getClass().getDeclaredField(entry.getKey());
 
-            if (field.getAnnotation(Id.class) != null && field.get(object) == null) {
+            if (field.equals(idField) && field.get(object) == null) {
                 continue;
             }
 
@@ -137,46 +142,28 @@ public class Repository<T> {
             Field field = object.getClass().getDeclaredField(fieldEntry.getKey());
             Object val = field.get(object);
 
-            if (field.getAnnotation(Id.class) != null && field.get(object) == null) {
+            if (field.equals(idField) && field.get(object) == null) {
                 continue;
             }
 
             params.add(val.toString());
         }
 
-        Optional<Map.Entry<String, String>> optionalIdField = this.fields.entrySet().stream().filter(elem -> {
-            try {
-                Field field = object.getClass().getDeclaredField(elem.getKey());
-                if (field.getAnnotation(Id.class) != null) {
-                    return true;
-                }
-            } catch (NoSuchFieldException e) {
-                e.printStackTrace();
-            }
-
-            return false;
-        }).findFirst();
-
-        if (optionalIdField.isEmpty()) {
-            throw new Exception("no primary field");
-        }
-
         connection.setAutoCommit(false);
         String strId = this.dbExecutor.insertRecord(connection, sql.toString(), params);
         connection.commit();
 
-        Field field = object.getClass().getDeclaredField(optionalIdField.get().getKey());
 
-        if (field.getType().equals(Long.class)) {
-            field.set(object, Long.parseLong(strId));
+        if (idField.getType().equals(Long.class)) {
+            idField.set(object, Long.parseLong(strId));
         }
 
-        if (field.getType().equals(Integer.class)) {
-            field.set(object, Integer.parseInt(strId));
+        if (idField.getType().equals(Integer.class)) {
+            idField.set(object, Integer.parseInt(strId));
         }
 
-        if (field.getType().equals(BigInteger.class)) {
-            field.set(object, new BigInteger(strId));
+        if (idField.getType().equals(BigInteger.class)) {
+            idField.set(object, new BigInteger(strId));
         }
 
         connection.close();
@@ -184,7 +171,7 @@ public class Repository<T> {
 
     public void update(T object) throws Exception {
 
-        Connection connection = DriverManager.getConnection(this.URL);
+        Connection connection = this.dataSource.getConnection();
         StringBuilder sql = new StringBuilder("UPDATE " + this.tableName + " SET \n");
 
         Iterator<Map.Entry<String, String>> tableFieldIterator = this.fields.entrySet().iterator();
@@ -252,7 +239,7 @@ public class Repository<T> {
 
     public <T> T load(Object id, Class<T> clazz) throws Exception {
 
-        Connection connection = DriverManager.getConnection(this.URL);
+        Connection connection = this.dataSource.getConnection();
         StringBuilder sql = new StringBuilder("SELECT  ");
 
         Iterator<Map.Entry<String, String>> tableFieldIterator = this.fields.entrySet().iterator();
