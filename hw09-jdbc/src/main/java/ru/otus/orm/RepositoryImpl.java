@@ -2,6 +2,7 @@ package ru.otus.orm;
 
 import ru.otus.orm.annotations.*;
 import ru.otus.orm.constants.Types;
+import ru.otus.orm.interfaces.Repository;
 
 import javax.sql.DataSource;
 import java.lang.reflect.Field;
@@ -10,7 +11,7 @@ import java.sql.Connection;
 import java.sql.SQLException;
 import java.util.*;
 
-public class RepositoryImpl<T> {
+public class RepositoryImpl<T> implements Repository<T> {
 
     private Map<String, String> fields = new HashMap<>();
     private Map<String, Integer> fieldSizes = new HashMap<>();
@@ -54,7 +55,6 @@ public class RepositoryImpl<T> {
 
         }
     }
-
 
     public void sync() throws SQLException, NoSuchFieldException {
         Connection connection = this.dataSource.getConnection();
@@ -181,7 +181,7 @@ public class RepositoryImpl<T> {
             Map.Entry<String, String> entry = tableFieldIterator.next();
             Field field = object.getClass().getDeclaredField(entry.getKey());
 
-            if (field.getAnnotation(Id.class) != null) {
+            if (field.equals(this.idField)) {
                 continue;
             }
 
@@ -193,27 +193,9 @@ public class RepositoryImpl<T> {
 
         }
 
-        Optional<Map.Entry<String, String>> optionalIdField = this.fields.entrySet().stream().filter(elem -> {
-            try {
-                Field field = object.getClass().getDeclaredField(elem.getKey());
-                if (field.getAnnotation(Id.class) != null) {
-                    return true;
-                }
-            } catch (NoSuchFieldException e) {
-                e.printStackTrace();
-            }
+        Object primaryId = this.idField.get(object);
 
-            return false;
-        }).findFirst();
-
-        if (optionalIdField.isEmpty()) {
-            throw new Exception("no primary field");
-        }
-
-        Field primaryIdField = object.getClass().getDeclaredField(optionalIdField.get().getKey());
-        Object primaryId = primaryIdField.get(object);
-
-        sql.append(" where ").append(optionalIdField.get().getKey()).append(" = ?");
+        sql.append(" where ").append(this.idField.getName()).append(" = ?");
 
         List<String> params = new ArrayList<>();
 
@@ -222,7 +204,7 @@ public class RepositoryImpl<T> {
             Field field = object.getClass().getDeclaredField(fieldEntry.getKey());
             Object val = field.get(object);
 
-            if (field.getAnnotation(Id.class) != null) {
+            if (field.equals(this.idField)) {
                 continue;
             }
 
@@ -237,7 +219,7 @@ public class RepositoryImpl<T> {
         connection.close();
     }
 
-    public <T> T load(Object id, Class<T> clazz) throws Exception {
+    public T load(Object id, Class<T> clazz) throws Exception {
 
         Connection connection = this.dataSource.getConnection();
         StringBuilder sql = new StringBuilder("SELECT  ");
@@ -257,28 +239,15 @@ public class RepositoryImpl<T> {
         }
 
         sql.append(" FROM ").append(this.tableName).append(" WHERE ");
-
-        Optional<Map.Entry<String, String>> optionalIdField = this.fields.entrySet().stream().filter(elem -> {
-            try {
-                Field field = clazz.getDeclaredField(elem.getKey());
-                if (field.getAnnotation(Id.class) != null) {
-                    return true;
-                }
-            } catch (NoSuchFieldException e) {
-                e.printStackTrace();
-            }
-            return false;
-        }).findFirst();
-
-        if (optionalIdField.isEmpty()) {
-            throw new Exception("no primary field");
-        }
-
-        sql.append(optionalIdField.get().getKey()).append(" = ?");
+        sql.append(this.idField.getName()).append(" = ?");
 
         HashMap<String, String> map = this.dbExecutor.selectRecord(connection, sql.toString(), id, this.fields.keySet());
+        return (T) this.buildObject(map, clazz);
+    }
 
-        T object = clazz.newInstance();
+    private T buildObject(Map<String, String> map, Class<?> clazz) throws NoSuchFieldException, IllegalAccessException, InstantiationException {
+
+        T object = (T) clazz.newInstance();
 
         for (Map.Entry<String, String> entrySet : this.fields.entrySet()) {
             Field field = clazz.getField(entrySet.getKey());
@@ -302,8 +271,6 @@ public class RepositoryImpl<T> {
         }
 
         return object;
-
-
     }
 
 
