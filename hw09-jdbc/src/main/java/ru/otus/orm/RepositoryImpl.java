@@ -1,8 +1,9 @@
 package ru.otus.orm;
 
-import ru.otus.orm.annotations.*;
-import ru.otus.orm.constants.Types;
+import ru.otus.orm.annotations.Id;
+import ru.otus.orm.annotations.Table;
 import ru.otus.orm.interfaces.Repository;
+import ru.otus.orm.utils.Utils;
 
 import javax.sql.DataSource;
 import java.lang.reflect.Field;
@@ -10,75 +11,45 @@ import java.math.BigInteger;
 import java.sql.Connection;
 import java.sql.SQLException;
 import java.util.*;
+import java.util.stream.Collectors;
 
 public class RepositoryImpl<T> implements Repository<T> {
 
-    private Map<String, String> fields = new HashMap<>();
-    private Map<String, Integer> fieldSizes = new HashMap<>();
+    private Map<Field, Map<String, String>> fields;
     private String tableName;
-    private Class<T> clazz;
     private DbExecutor<T> dbExecutor;
     private DataSource dataSource;
     private Field idField;
 
     public RepositoryImpl(Class<T> clazz, DbExecutor<T> dbExecutor, DataSource dataSource) {
-
         this.dbExecutor = dbExecutor;
         this.dataSource = dataSource;
 
-        this.clazz = clazz;
         this.tableName = clazz.getAnnotation(Table.class) != null ?
                 clazz.getAnnotation(Table.class).name() :
                 clazz.getSimpleName();
 
-
-        for (Field field : clazz.getDeclaredFields()) {
-
-            if (field.getAnnotation(BigInt.class) != null) {
-                this.fields.put(field.getName(), Types.BIGINTEGER.getType());
-                this.fieldSizes.put(field.getName(), field.getAnnotation(BigInt.class).size());
-            }
-
-            if (field.getAnnotation(Int.class) != null) {
-                this.fields.put(field.getName(), Types.INTEGER.getType());
-                this.fieldSizes.put(field.getName(), field.getAnnotation(Int.class).size());
-            }
-
-            if (field.getAnnotation(Varchar.class) != null) {
-                this.fields.put(field.getName(), Types.VARCHAR.getType());
-                this.fieldSizes.put(field.getName(), field.getAnnotation(Varchar.class).size());
-            }
-
-            if (field.getAnnotation(Id.class) != null) {
-                this.idField = field;
-            }
-
-        }
+        this.fields = Utils.objectToMapType(clazz);
+        this.idField = this.fields.keySet().stream().filter(f-> f.getAnnotation(Id.class) != null).findFirst().get();
     }
 
-    public void sync() throws SQLException, NoSuchFieldException {
+
+    public void sync() throws SQLException {
         Connection connection = this.dataSource.getConnection();
         StringBuilder sql = new StringBuilder("CREATE TABLE " + this.tableName + " (\n");
-        for (Map.Entry<String, String> field : this.fields.entrySet()) {
-            sql.append(field.getKey()).append(" ").append(field.getValue());
+        for (Map.Entry<Field, Map<String, String>> field : this.fields.entrySet()) {
+            sql.append(field.getKey().getName()).append(" ").append(field.getValue().get("type"));
 
-            if (this.fieldSizes.get(field.getKey()) != null) {
-                sql.append("(").append(this.fieldSizes.get(field.getKey())).append(")");
+            sql.append("(").append(field.getValue().get("size")).append(")");
 
-
-                Field f = this.clazz.getDeclaredField(field.getKey());
-
-                if (f.equals(this.idField)) {
-                    sql.append(" auto_increment,\n");
-
-                } else {
-                    sql.append(",\n");
-                }
-
+            if (field.getKey().equals(this.idField)) {
+                sql.append(" auto_increment,\n");
 
             } else {
                 sql.append(",\n");
             }
+
+
         }
         sql.append(")");
 
@@ -91,55 +62,16 @@ public class RepositoryImpl<T> implements Repository<T> {
     public void insert(T object) throws Exception {
 
         Connection connection = this.dataSource.getConnection();
-        StringBuilder sql = new StringBuilder("INSERT INTO " + this.tableName + " (\n");
 
-        Iterator<Map.Entry<String, String>> tableFieldIterator = this.fields.entrySet().iterator();
-
-        while (tableFieldIterator.hasNext()) {
-
-            Map.Entry<String, String> entry = tableFieldIterator.next();
-            Field field = object.getClass().getDeclaredField(entry.getKey());
-
-            if (field.equals(this.idField) && field.get(object) == null) {
-                continue;
-            }
-
-            sql.append(entry.getKey());
-
-            if (tableFieldIterator.hasNext()) {
-                sql.append(",");
-            }
-
-        }
-
-        sql.append(") VALUES (");
-
-        tableFieldIterator = this.fields.entrySet().iterator();
-
-        while (tableFieldIterator.hasNext()) {
-            Map.Entry<String, String> entry = tableFieldIterator.next();
-
-            Field field = object.getClass().getDeclaredField(entry.getKey());
-
-            if (field.equals(idField) && field.get(object) == null) {
-                continue;
-            }
-
-            sql.append("?");
-
-            if (tableFieldIterator.hasNext()) {
-                sql.append(",");
-            }
-
-        }
-
-        sql.append(")");
+        List<String> fieldsNamesWithoutId = fields.keySet().stream().filter(f -> !f.equals(idField)).map(Field::getName).collect(Collectors.toList());
+        String fieldsNames = String.join(", ", fieldsNamesWithoutId);
+        String fieldsValues = fieldsNamesWithoutId.stream().map(k -> "?").collect(Collectors.joining(", "));
+        String sqlInsert = String.format("INSERT INTO %s (%s) VALUES(%s)", tableName, fieldsNames, fieldsValues);
 
         List<String> params = new ArrayList<>();
 
-        for (Map.Entry<String, String> fieldEntry : this.fields.entrySet()) {
+        for (Field field : this.fields.keySet()) {
 
-            Field field = object.getClass().getDeclaredField(fieldEntry.getKey());
             Object val = field.get(object);
 
             if (field.equals(idField) && field.get(object) == null) {
@@ -150,7 +82,7 @@ public class RepositoryImpl<T> implements Repository<T> {
         }
 
         connection.setAutoCommit(false);
-        String strId = this.dbExecutor.insertRecord(connection, sql.toString(), params);
+        String strId = this.dbExecutor.insertRecord(connection, sqlInsert.toString(), params);
         connection.commit();
 
 
@@ -172,36 +104,15 @@ public class RepositoryImpl<T> implements Repository<T> {
     public void update(T object) throws Exception {
 
         Connection connection = this.dataSource.getConnection();
-        StringBuilder sql = new StringBuilder("UPDATE " + this.tableName + " SET \n");
-
-        Iterator<Map.Entry<String, String>> tableFieldIterator = this.fields.entrySet().iterator();
-
-        while (tableFieldIterator.hasNext()) {
-
-            Map.Entry<String, String> entry = tableFieldIterator.next();
-            Field field = object.getClass().getDeclaredField(entry.getKey());
-
-            if (field.equals(this.idField)) {
-                continue;
-            }
-
-            sql.append(entry.getKey()).append("=").append("?");
-
-            if (tableFieldIterator.hasNext()) {
-                sql.append(",");
-            }
-
-        }
+        List<String> fieldsWithoutId = fields.keySet().stream().filter(f -> !f.equals(idField)).map(f-> f.getName() + " = ?").collect(Collectors.toList());
+        String fields = String.join(", ", fieldsWithoutId);
+        String sqlUpdate = String.format("UPDATE %s SET %s WHERE %s = ?", tableName, fields, this.idField.getName());
 
         Object primaryId = this.idField.get(object);
 
-        sql.append(" where ").append(this.idField.getName()).append(" = ?");
-
         List<String> params = new ArrayList<>();
 
-        for (Map.Entry<String, String> fieldEntry : this.fields.entrySet()) {
-
-            Field field = object.getClass().getDeclaredField(fieldEntry.getKey());
+        for (Field field : this.fields.keySet()) {
             Object val = field.get(object);
 
             if (field.equals(this.idField)) {
@@ -214,7 +125,7 @@ public class RepositoryImpl<T> implements Repository<T> {
         params.add(primaryId.toString());
 
         connection.setAutoCommit(false);
-        this.dbExecutor.updateRecord(connection, sql.toString(), params);
+        this.dbExecutor.updateRecord(connection, sqlUpdate, params);
         connection.commit();
         connection.close();
     }
@@ -222,50 +133,39 @@ public class RepositoryImpl<T> implements Repository<T> {
     public T load(Object id, Class<T> clazz) throws Exception {
 
         Connection connection = this.dataSource.getConnection();
-        StringBuilder sql = new StringBuilder("SELECT  ");
 
-        Iterator<Map.Entry<String, String>> tableFieldIterator = this.fields.entrySet().iterator();
+        Set<String> fieldsWithoutId = fields.keySet().stream().map(Field::getName).collect(Collectors.toSet());
+        String fields = String.join(", ", fieldsWithoutId);
+        String sqlUpdate = String.format("SELECT %s FROM %s WHERE %s = ?", fields, tableName, this.idField.getName());
 
-        while (tableFieldIterator.hasNext()) {
 
-            Map.Entry<String, String> entry = tableFieldIterator.next();
 
-            sql.append(entry.getKey());
-
-            if (tableFieldIterator.hasNext()) {
-                sql.append(",");
-            }
-
-        }
-
-        sql.append(" FROM ").append(this.tableName).append(" WHERE ");
-        sql.append(this.idField.getName()).append(" = ?");
-
-        HashMap<String, String> map = this.dbExecutor.selectRecord(connection, sql.toString(), id, this.fields.keySet());
+        HashMap<String, String> map = this.dbExecutor.selectRecord(connection, sqlUpdate, id, fieldsWithoutId);
         return (T) this.buildObject(map, clazz);
     }
 
-    private T buildObject(Map<String, String> map, Class<?> clazz) throws NoSuchFieldException, IllegalAccessException, InstantiationException {
+    private T buildObject(Map<String, String> map, Class<?> clazz) throws IllegalAccessException, InstantiationException {
 
         T object = (T) clazz.newInstance();
 
-        for (Map.Entry<String, String> entrySet : this.fields.entrySet()) {
-            Field field = clazz.getField(entrySet.getKey());
+        for (Field field : this.fields.keySet()) {
+
+            System.out.println(field.getName());
 
             if (field.getType().equals(Long.class)) {
-                field.set(object, Long.parseLong(map.get(entrySet.getKey())));
+                field.set(object, Long.parseLong(map.get(field.getName())));
             }
 
             if (field.getType().equals(String.class)) {
-                field.set(object, map.get(entrySet.getKey()));
+                field.set(object, map.get(field.getName()));
             }
 
             if (field.getType().equals(Integer.class)) {
-                field.set(object, Integer.parseInt(map.get(entrySet.getKey())));
+                field.set(object, Integer.parseInt(map.get(field.getName())));
             }
 
             if (field.getType().equals(BigInteger.class)) {
-                field.set(object, new BigInteger(map.get(entrySet.getKey())));
+                field.set(object, new BigInteger(map.get(field.getName())));
             }
 
         }
