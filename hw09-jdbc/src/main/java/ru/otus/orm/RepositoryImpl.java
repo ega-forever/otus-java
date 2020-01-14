@@ -30,31 +30,29 @@ public class RepositoryImpl<T> implements Repository<T> {
                 clazz.getSimpleName();
 
         this.fields = Utils.objectToMapType(clazz);
-        this.idField = this.fields.keySet().stream().filter(f-> f.getAnnotation(Id.class) != null).findFirst().get();
+        this.idField = this.fields.keySet().stream().filter(f -> f.getAnnotation(Id.class) != null).findFirst().get();
     }
 
 
     public void sync() throws SQLException {
         Connection connection = this.dataSource.getConnection();
-        StringBuilder sql = new StringBuilder("CREATE TABLE " + this.tableName + " (\n");
-        for (Map.Entry<Field, Map<String, String>> field : this.fields.entrySet()) {
-            sql.append(field.getKey().getName()).append(" ").append(field.getValue().get("type"));
 
-            sql.append("(").append(field.getValue().get("size")).append(")");
+        List<String> fieldsString = this.fields.keySet().stream().map(field -> {
+            StringBuilder builder = new StringBuilder(field.getName())
+                    .append(" ").append(this.fields.get(field).get("type"))
+                    .append(" (").append(this.fields.get(field).get("size"))
+                    .append(" )");
 
-            if (field.getKey().equals(this.idField)) {
-                sql.append(" auto_increment,\n");
-
-            } else {
-                sql.append(",\n");
+            if (field.equals(this.idField)) {
+                builder.append(" auto_increment");
             }
-
-
-        }
-        sql.append(")");
+            return builder.toString();
+        }).collect(Collectors.toList());
+        String fields = String.join(", ", fieldsString);
+        String sqlCreateTable = String.format("CREATE TABLE %s (%s)", tableName, fields);
 
         connection.setAutoCommit(false);
-        this.dbExecutor.executeRawQuery(connection, sql.toString());
+        this.dbExecutor.executeRawQuery(connection, sqlCreateTable);
         connection.commit();
         connection.close();
     }
@@ -82,20 +80,20 @@ public class RepositoryImpl<T> implements Repository<T> {
         }
 
         connection.setAutoCommit(false);
-        String strId = this.dbExecutor.insertRecord(connection, sqlInsert.toString(), params);
+        Object id = this.dbExecutor.insertRecord(connection, sqlInsert, params);
         connection.commit();
 
 
         if (idField.getType().equals(Long.class)) {
-            idField.set(object, Long.parseLong(strId));
+            idField.set(object, id);
         }
 
         if (idField.getType().equals(Integer.class)) {
-            idField.set(object, Integer.parseInt(strId));
+            idField.set(object, id);
         }
 
         if (idField.getType().equals(BigInteger.class)) {
-            idField.set(object, new BigInteger(strId));
+            idField.set(object, BigInteger.valueOf((Long) id));
         }
 
         connection.close();
@@ -104,7 +102,7 @@ public class RepositoryImpl<T> implements Repository<T> {
     public void update(T object) throws Exception {
 
         Connection connection = this.dataSource.getConnection();
-        List<String> fieldsWithoutId = fields.keySet().stream().filter(f -> !f.equals(idField)).map(f-> f.getName() + " = ?").collect(Collectors.toList());
+        List<String> fieldsWithoutId = fields.keySet().stream().filter(f -> !f.equals(idField)).map(f -> f.getName() + " = ?").collect(Collectors.toList());
         String fields = String.join(", ", fieldsWithoutId);
         String sqlUpdate = String.format("UPDATE %s SET %s WHERE %s = ?", tableName, fields, this.idField.getName());
 
@@ -138,22 +136,18 @@ public class RepositoryImpl<T> implements Repository<T> {
         String fields = String.join(", ", fieldsWithoutId);
         String sqlUpdate = String.format("SELECT %s FROM %s WHERE %s = ?", fields, tableName, this.idField.getName());
 
-
-
-        HashMap<String, String> map = this.dbExecutor.selectRecord(connection, sqlUpdate, id, fieldsWithoutId);
+        HashMap<String, Object> map = this.dbExecutor.selectRecord(connection, sqlUpdate, id, fieldsWithoutId);
         return (T) this.buildObject(map, clazz);
     }
 
-    private T buildObject(Map<String, String> map, Class<?> clazz) throws IllegalAccessException, InstantiationException {
+    private T buildObject(Map<String, Object> map, Class<?> clazz) throws IllegalAccessException, InstantiationException {
 
         T object = (T) clazz.newInstance();
 
         for (Field field : this.fields.keySet()) {
 
-            System.out.println(field.getName());
-
             if (field.getType().equals(Long.class)) {
-                field.set(object, Long.parseLong(map.get(field.getName())));
+                field.set(object, map.get(field.getName()));
             }
 
             if (field.getType().equals(String.class)) {
@@ -161,11 +155,11 @@ public class RepositoryImpl<T> implements Repository<T> {
             }
 
             if (field.getType().equals(Integer.class)) {
-                field.set(object, Integer.parseInt(map.get(field.getName())));
+                field.set(object, map.get(field.getName()));
             }
 
             if (field.getType().equals(BigInteger.class)) {
-                field.set(object, new BigInteger(map.get(field.getName())));
+                field.set(object, BigInteger.valueOf((Long) map.get(field.getName())));
             }
 
         }

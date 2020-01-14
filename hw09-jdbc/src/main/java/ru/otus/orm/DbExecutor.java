@@ -15,7 +15,7 @@ import java.util.Set;
 public class DbExecutor<T> {
     private static Logger logger = LoggerFactory.getLogger(DbExecutor.class);
 
-    public String insertRecord(Connection connection, String sql, List<String> params) throws SQLException {
+    public Object insertRecord(Connection connection, String sql, List<String> params) throws SQLException {
         Savepoint savePoint = connection.setSavepoint("savePointName");
         try (PreparedStatement pst = connection.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
             for (int idx = 0; idx < params.size(); idx++) {
@@ -24,7 +24,7 @@ public class DbExecutor<T> {
             pst.executeUpdate();
             try (ResultSet rs = pst.getGeneratedKeys()) {
                 rs.next();
-                return rs.getString(1);
+                return rs.getObject(1);
             }
         } catch (SQLException ex) {
             connection.rollback(savePoint);
@@ -59,16 +59,16 @@ public class DbExecutor<T> {
     }
 
 
-    public HashMap<String, String> selectRecord(Connection connection, String sql, Object id, Set<String> fields) throws SQLException {
+    public HashMap<String, Object> selectRecord(Connection connection, String sql, Object id, Set<String> fields) throws SQLException {
         try (PreparedStatement pst = connection.prepareStatement(sql)) {
             pst.setString(1, id.toString());
             try (ResultSet rs = pst.executeQuery()) {
                 if (rs.next()) {
 
-                    HashMap<String, String> map = new HashMap<>();
+                    HashMap<String, Object> map = new HashMap<>();
 
                     for (String fieldName : fields) {
-                        map.put(fieldName, rs.getString(fieldName));
+                        map.put(fieldName, rs.getObject(fieldName));
                     }
                     return map;
                 }
