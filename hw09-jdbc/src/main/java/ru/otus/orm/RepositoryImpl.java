@@ -2,6 +2,7 @@ package ru.otus.orm;
 
 import ru.otus.orm.annotations.Id;
 import ru.otus.orm.annotations.Table;
+import ru.otus.orm.constants.QueryTypes;
 import ru.otus.orm.interfaces.Repository;
 import ru.otus.orm.utils.Utils;
 
@@ -15,7 +16,8 @@ import java.util.stream.Collectors;
 
 public class RepositoryImpl<T> implements Repository<T> {
 
-    private Map<Field, Map<String, String>> fields;
+    private Map<Field, FieldPropsModel> fields;
+    private Map<QueryTypes, String> predefinedQueries;
     private String tableName;
     private DbExecutor<T> dbExecutor;
     private DataSource dataSource;
@@ -31,16 +33,40 @@ public class RepositoryImpl<T> implements Repository<T> {
 
         this.fields = Utils.objectToMapType(clazz);
         this.idField = this.fields.keySet().stream().filter(f -> f.getAnnotation(Id.class) != null).findFirst().get();
+
+        this.predefinedQueries = new HashMap<>();
+        this.predefinedQueries.put(QueryTypes.CREATE, this.buildPredefinedInsertQuery());
+        this.predefinedQueries.put(QueryTypes.UPDATE, this.buildPredefinedUpdateQuery());
+        this.predefinedQueries.put(QueryTypes.SELECT, this.buildPredefinedSelectQuery());
+
     }
 
+    private String buildPredefinedInsertQuery() {
+        List<String> fieldsNamesWithoutId = fields.keySet().stream().filter(f -> !f.equals(idField)).map(Field::getName).collect(Collectors.toList());
+        String fieldsNames = String.join(", ", fieldsNamesWithoutId);
+        String fieldsValues = fields.keySet().stream().filter(f -> !f.equals(idField)).map(k -> "?").collect(Collectors.joining(", "));
+        return String.format("INSERT INTO %s (%s)  VALUES(%s)", tableName, fieldsNames, fieldsValues);
+    }
+
+    private String buildPredefinedUpdateQuery() {
+        List<String> fieldsWithoutId = fields.keySet().stream().filter(f -> !f.equals(idField)).map(f -> f.getName() + " = ?").collect(Collectors.toList());
+        String fields = String.join(", ", fieldsWithoutId);
+        return String.format("UPDATE %s SET %s WHERE %s = ?", tableName, fields, this.idField.getName());
+    }
+
+    private String buildPredefinedSelectQuery() {
+        Set<String> fieldsWithoutId = fields.keySet().stream().map(Field::getName).collect(Collectors.toSet());
+        String fields = String.join(", ", fieldsWithoutId);
+        return String.format("SELECT %s FROM %s WHERE %s = ?", fields, tableName, this.idField.getName());
+    }
 
     public void sync() throws SQLException {
         Connection connection = this.dataSource.getConnection();
 
         List<String> fieldsString = this.fields.keySet().stream().map(field -> {
             StringBuilder builder = new StringBuilder(field.getName())
-                    .append(" ").append(this.fields.get(field).get("type"))
-                    .append(" (").append(this.fields.get(field).get("size"))
+                    .append(" ").append(this.fields.get(field).getType().getType())
+                    .append(" (").append(this.fields.get(field).getSize())
                     .append(" )");
 
             if (field.equals(this.idField)) {
@@ -60,13 +86,9 @@ public class RepositoryImpl<T> implements Repository<T> {
     public void insert(T object) throws Exception {
 
         Connection connection = this.dataSource.getConnection();
+        String sqlInsert = this.predefinedQueries.get(QueryTypes.CREATE);
 
-        List<String> fieldsNamesWithoutId = fields.keySet().stream().filter(f -> !f.equals(idField)).map(Field::getName).collect(Collectors.toList());
-        String fieldsNames = String.join(", ", fieldsNamesWithoutId);
-        String fieldsValues = fieldsNamesWithoutId.stream().map(k -> "?").collect(Collectors.joining(", "));
-        String sqlInsert = String.format("INSERT INTO %s (%s) VALUES(%s)", tableName, fieldsNames, fieldsValues);
-
-        List<String> params = new ArrayList<>();
+        List<Object> params = new ArrayList<>();
 
         for (Field field : this.fields.keySet()) {
 
@@ -76,24 +98,17 @@ public class RepositoryImpl<T> implements Repository<T> {
                 continue;
             }
 
-            params.add(val.toString());
+            params.add(val);
         }
 
         connection.setAutoCommit(false);
         Object id = this.dbExecutor.insertRecord(connection, sqlInsert, params);
         connection.commit();
 
-
-        if (idField.getType().equals(Long.class)) {
-            idField.set(object, id);
-        }
-
-        if (idField.getType().equals(Integer.class)) {
-            idField.set(object, id);
-        }
-
         if (idField.getType().equals(BigInteger.class)) {
             idField.set(object, BigInteger.valueOf((Long) id));
+        } else {
+            idField.set(object, id);
         }
 
         connection.close();
@@ -102,13 +117,11 @@ public class RepositoryImpl<T> implements Repository<T> {
     public void update(T object) throws Exception {
 
         Connection connection = this.dataSource.getConnection();
-        List<String> fieldsWithoutId = fields.keySet().stream().filter(f -> !f.equals(idField)).map(f -> f.getName() + " = ?").collect(Collectors.toList());
-        String fields = String.join(", ", fieldsWithoutId);
-        String sqlUpdate = String.format("UPDATE %s SET %s WHERE %s = ?", tableName, fields, this.idField.getName());
 
+        String sqlUpdate = predefinedQueries.get(QueryTypes.UPDATE);
         Object primaryId = this.idField.get(object);
 
-        List<String> params = new ArrayList<>();
+        List<Object> params = new ArrayList<>();
 
         for (Field field : this.fields.keySet()) {
             Object val = field.get(object);
@@ -117,7 +130,7 @@ public class RepositoryImpl<T> implements Repository<T> {
                 continue;
             }
 
-            params.add(val.toString());
+            params.add(val);
         }
 
         params.add(primaryId.toString());
@@ -129,14 +142,11 @@ public class RepositoryImpl<T> implements Repository<T> {
     }
 
     public T load(Object id, Class<T> clazz) throws Exception {
-
         Connection connection = this.dataSource.getConnection();
 
+        String sqlSelect = this.predefinedQueries.get(QueryTypes.SELECT);
         Set<String> fieldsWithoutId = fields.keySet().stream().map(Field::getName).collect(Collectors.toSet());
-        String fields = String.join(", ", fieldsWithoutId);
-        String sqlUpdate = String.format("SELECT %s FROM %s WHERE %s = ?", fields, tableName, this.idField.getName());
-
-        HashMap<String, Object> map = this.dbExecutor.selectRecord(connection, sqlUpdate, id, fieldsWithoutId);
+        HashMap<String, Object> map = this.dbExecutor.selectRecord(connection, sqlSelect, id, fieldsWithoutId);
         return (T) this.buildObject(map, clazz);
     }
 
@@ -166,6 +176,4 @@ public class RepositoryImpl<T> implements Repository<T> {
 
         return object;
     }
-
-
 }
