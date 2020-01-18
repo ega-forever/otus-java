@@ -7,12 +7,12 @@ public class CalculatorTest {
     private Calculator calculator = new Calculator();
 
     @BeforeAll
-    void beforeClass() {
+    static void beforeClass() {
         System.out.println("before class");
     }
 
     @AfterAll
-    void afterClass() {
+    static void afterClass() {
         System.out.println("after class");
     }
 

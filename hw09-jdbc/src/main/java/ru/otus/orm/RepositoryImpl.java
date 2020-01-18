@@ -1,8 +1,10 @@
 package ru.otus.orm;
 
-import ru.otus.orm.annotations.*;
-import ru.otus.orm.constants.Types;
+import ru.otus.orm.annotations.Id;
+import ru.otus.orm.annotations.Table;
+import ru.otus.orm.constants.QueryTypes;
 import ru.otus.orm.interfaces.Repository;
+import ru.otus.orm.utils.Utils;
 
 import javax.sql.DataSource;
 import java.lang.reflect.Field;
@@ -10,80 +12,73 @@ import java.math.BigInteger;
 import java.sql.Connection;
 import java.sql.SQLException;
 import java.util.*;
+import java.util.stream.Collectors;
 
 public class RepositoryImpl<T> implements Repository<T> {
 
-    private Map<String, String> fields = new HashMap<>();
-    private Map<String, Integer> fieldSizes = new HashMap<>();
+    private Map<Field, FieldPropsModel> fields;
+    private Map<QueryTypes, String> predefinedQueries;
     private String tableName;
-    private Class<T> clazz;
     private DbExecutor<T> dbExecutor;
     private DataSource dataSource;
     private Field idField;
 
     public RepositoryImpl(Class<T> clazz, DbExecutor<T> dbExecutor, DataSource dataSource) {
-
         this.dbExecutor = dbExecutor;
         this.dataSource = dataSource;
 
-        this.clazz = clazz;
         this.tableName = clazz.getAnnotation(Table.class) != null ?
                 clazz.getAnnotation(Table.class).name() :
                 clazz.getSimpleName();
 
+        this.fields = Utils.objectToMapType(clazz);
+        this.idField = this.fields.keySet().stream().filter(f -> f.getAnnotation(Id.class) != null).findFirst().get();
 
-        for (Field field : clazz.getDeclaredFields()) {
+        this.predefinedQueries = new HashMap<>();
+        this.predefinedQueries.put(QueryTypes.CREATE, this.buildPredefinedInsertQuery());
+        this.predefinedQueries.put(QueryTypes.UPDATE, this.buildPredefinedUpdateQuery());
+        this.predefinedQueries.put(QueryTypes.SELECT, this.buildPredefinedSelectQuery());
 
-            if (field.getAnnotation(BigInt.class) != null) {
-                this.fields.put(field.getName(), Types.BIGINTEGER.getType());
-                this.fieldSizes.put(field.getName(), field.getAnnotation(BigInt.class).size());
-            }
-
-            if (field.getAnnotation(Int.class) != null) {
-                this.fields.put(field.getName(), Types.INTEGER.getType());
-                this.fieldSizes.put(field.getName(), field.getAnnotation(Int.class).size());
-            }
-
-            if (field.getAnnotation(Varchar.class) != null) {
-                this.fields.put(field.getName(), Types.VARCHAR.getType());
-                this.fieldSizes.put(field.getName(), field.getAnnotation(Varchar.class).size());
-            }
-
-            if (field.getAnnotation(Id.class) != null) {
-                this.idField = field;
-            }
-
-        }
     }
 
-    public void sync() throws SQLException, NoSuchFieldException {
+    private String buildPredefinedInsertQuery() {
+        List<String> fieldsNamesWithoutId = fields.keySet().stream().filter(f -> !f.equals(idField)).map(Field::getName).collect(Collectors.toList());
+        String fieldsNames = String.join(", ", fieldsNamesWithoutId);
+        String fieldsValues = fields.keySet().stream().filter(f -> !f.equals(idField)).map(k -> "?").collect(Collectors.joining(", "));
+        return String.format("INSERT INTO %s (%s)  VALUES(%s)", tableName, fieldsNames, fieldsValues);
+    }
+
+    private String buildPredefinedUpdateQuery() {
+        List<String> fieldsWithoutId = fields.keySet().stream().filter(f -> !f.equals(idField)).map(f -> f.getName() + " = ?").collect(Collectors.toList());
+        String fields = String.join(", ", fieldsWithoutId);
+        return String.format("UPDATE %s SET %s WHERE %s = ?", tableName, fields, this.idField.getName());
+    }
+
+    private String buildPredefinedSelectQuery() {
+        Set<String> fieldsWithoutId = fields.keySet().stream().map(Field::getName).collect(Collectors.toSet());
+        String fields = String.join(", ", fieldsWithoutId);
+        return String.format("SELECT %s FROM %s WHERE %s = ?", fields, tableName, this.idField.getName());
+    }
+
+    public void sync() throws SQLException {
         Connection connection = this.dataSource.getConnection();
-        StringBuilder sql = new StringBuilder("CREATE TABLE " + this.tableName + " (\n");
-        for (Map.Entry<String, String> field : this.fields.entrySet()) {
-            sql.append(field.getKey()).append(" ").append(field.getValue());
 
-            if (this.fieldSizes.get(field.getKey()) != null) {
-                sql.append("(").append(this.fieldSizes.get(field.getKey())).append(")");
+        List<String> fieldsString = this.fields.keySet().stream().map(field -> {
+            StringBuilder builder = new StringBuilder(field.getName())
+                    .append(" ").append(this.fields.get(field).getType().getType())
+                    .append(" (").append(this.fields.get(field).getSize())
+                    .append(" )");
 
-
-                Field f = this.clazz.getDeclaredField(field.getKey());
-
-                if (f.equals(this.idField)) {
-                    sql.append(" auto_increment,\n");
-
-                } else {
-                    sql.append(",\n");
-                }
-
-
-            } else {
-                sql.append(",\n");
+            if (field.equals(this.idField)) {
+                builder.append(" auto_increment");
             }
-        }
-        sql.append(")");
+            return builder.toString();
+        }).collect(Collectors.toList());
+        String fields = String.join(", ", fieldsString);
+        String sqlCreateTable = String.format("CREATE TABLE %s (%s)", tableName, fields);
 
         connection.setAutoCommit(false);
-        this.dbExecutor.executeRawQuery(connection, sql.toString());
+        this.dbExecutor.executeRawQuery(connection, sqlCreateTable);
         connection.commit();
         connection.close();
     }
@@ -91,79 +86,29 @@ public class RepositoryImpl<T> implements Repository<T> {
     public void insert(T object) throws Exception {
 
         Connection connection = this.dataSource.getConnection();
-        StringBuilder sql = new StringBuilder("INSERT INTO " + this.tableName + " (\n");
+        String sqlInsert = this.predefinedQueries.get(QueryTypes.CREATE);
 
-        Iterator<Map.Entry<String, String>> tableFieldIterator = this.fields.entrySet().iterator();
+        List<Object> params = new ArrayList<>();
 
-        while (tableFieldIterator.hasNext()) {
+        for (Field field : this.fields.keySet()) {
 
-            Map.Entry<String, String> entry = tableFieldIterator.next();
-            Field field = object.getClass().getDeclaredField(entry.getKey());
-
-            if (field.equals(this.idField) && field.get(object) == null) {
-                continue;
-            }
-
-            sql.append(entry.getKey());
-
-            if (tableFieldIterator.hasNext()) {
-                sql.append(",");
-            }
-
-        }
-
-        sql.append(") VALUES (");
-
-        tableFieldIterator = this.fields.entrySet().iterator();
-
-        while (tableFieldIterator.hasNext()) {
-            Map.Entry<String, String> entry = tableFieldIterator.next();
-
-            Field field = object.getClass().getDeclaredField(entry.getKey());
-
-            if (field.equals(idField) && field.get(object) == null) {
-                continue;
-            }
-
-            sql.append("?");
-
-            if (tableFieldIterator.hasNext()) {
-                sql.append(",");
-            }
-
-        }
-
-        sql.append(")");
-
-        List<String> params = new ArrayList<>();
-
-        for (Map.Entry<String, String> fieldEntry : this.fields.entrySet()) {
-
-            Field field = object.getClass().getDeclaredField(fieldEntry.getKey());
             Object val = field.get(object);
 
             if (field.equals(idField) && field.get(object) == null) {
                 continue;
             }
 
-            params.add(val.toString());
+            params.add(val);
         }
 
         connection.setAutoCommit(false);
-        String strId = this.dbExecutor.insertRecord(connection, sql.toString(), params);
+        Object id = this.dbExecutor.insertRecord(connection, sqlInsert, params);
         connection.commit();
 
-
-        if (idField.getType().equals(Long.class)) {
-            idField.set(object, Long.parseLong(strId));
-        }
-
-        if (idField.getType().equals(Integer.class)) {
-            idField.set(object, Integer.parseInt(strId));
-        }
-
         if (idField.getType().equals(BigInteger.class)) {
-            idField.set(object, new BigInteger(strId));
+            idField.set(object, BigInteger.valueOf((Long) id));
+        } else {
+            idField.set(object, id);
         }
 
         connection.close();
@@ -172,106 +117,63 @@ public class RepositoryImpl<T> implements Repository<T> {
     public void update(T object) throws Exception {
 
         Connection connection = this.dataSource.getConnection();
-        StringBuilder sql = new StringBuilder("UPDATE " + this.tableName + " SET \n");
 
-        Iterator<Map.Entry<String, String>> tableFieldIterator = this.fields.entrySet().iterator();
-
-        while (tableFieldIterator.hasNext()) {
-
-            Map.Entry<String, String> entry = tableFieldIterator.next();
-            Field field = object.getClass().getDeclaredField(entry.getKey());
-
-            if (field.equals(this.idField)) {
-                continue;
-            }
-
-            sql.append(entry.getKey()).append("=").append("?");
-
-            if (tableFieldIterator.hasNext()) {
-                sql.append(",");
-            }
-
-        }
-
+        String sqlUpdate = predefinedQueries.get(QueryTypes.UPDATE);
         Object primaryId = this.idField.get(object);
 
-        sql.append(" where ").append(this.idField.getName()).append(" = ?");
+        List<Object> params = new ArrayList<>();
 
-        List<String> params = new ArrayList<>();
-
-        for (Map.Entry<String, String> fieldEntry : this.fields.entrySet()) {
-
-            Field field = object.getClass().getDeclaredField(fieldEntry.getKey());
+        for (Field field : this.fields.keySet()) {
             Object val = field.get(object);
 
             if (field.equals(this.idField)) {
                 continue;
             }
 
-            params.add(val.toString());
+            params.add(val);
         }
 
         params.add(primaryId.toString());
 
         connection.setAutoCommit(false);
-        this.dbExecutor.updateRecord(connection, sql.toString(), params);
+        this.dbExecutor.updateRecord(connection, sqlUpdate, params);
         connection.commit();
         connection.close();
     }
 
     public T load(Object id, Class<T> clazz) throws Exception {
-
         Connection connection = this.dataSource.getConnection();
-        StringBuilder sql = new StringBuilder("SELECT  ");
 
-        Iterator<Map.Entry<String, String>> tableFieldIterator = this.fields.entrySet().iterator();
-
-        while (tableFieldIterator.hasNext()) {
-
-            Map.Entry<String, String> entry = tableFieldIterator.next();
-
-            sql.append(entry.getKey());
-
-            if (tableFieldIterator.hasNext()) {
-                sql.append(",");
-            }
-
-        }
-
-        sql.append(" FROM ").append(this.tableName).append(" WHERE ");
-        sql.append(this.idField.getName()).append(" = ?");
-
-        HashMap<String, String> map = this.dbExecutor.selectRecord(connection, sql.toString(), id, this.fields.keySet());
+        String sqlSelect = this.predefinedQueries.get(QueryTypes.SELECT);
+        Set<String> fieldsWithoutId = fields.keySet().stream().map(Field::getName).collect(Collectors.toSet());
+        HashMap<String, Object> map = this.dbExecutor.selectRecord(connection, sqlSelect, id, fieldsWithoutId);
         return (T) this.buildObject(map, clazz);
     }
 
-    private T buildObject(Map<String, String> map, Class<?> clazz) throws NoSuchFieldException, IllegalAccessException, InstantiationException {
+    private T buildObject(Map<String, Object> map, Class<?> clazz) throws IllegalAccessException, InstantiationException {
 
         T object = (T) clazz.newInstance();
 
-        for (Map.Entry<String, String> entrySet : this.fields.entrySet()) {
-            Field field = clazz.getField(entrySet.getKey());
+        for (Field field : this.fields.keySet()) {
 
             if (field.getType().equals(Long.class)) {
-                field.set(object, Long.parseLong(map.get(entrySet.getKey())));
+                field.set(object, map.get(field.getName()));
             }
 
             if (field.getType().equals(String.class)) {
-                field.set(object, map.get(entrySet.getKey()));
+                field.set(object, map.get(field.getName()));
             }
 
             if (field.getType().equals(Integer.class)) {
-                field.set(object, Integer.parseInt(map.get(entrySet.getKey())));
+                field.set(object, map.get(field.getName()));
             }
 
             if (field.getType().equals(BigInteger.class)) {
-                field.set(object, new BigInteger(map.get(entrySet.getKey())));
+                field.set(object, BigInteger.valueOf((Long) map.get(field.getName())));
             }
 
         }
 
         return object;
     }
-
-
 }
