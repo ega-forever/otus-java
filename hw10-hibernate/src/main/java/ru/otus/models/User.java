@@ -25,11 +25,11 @@ public class User {
     @Column(name = "age")
     public Integer age;
 
-    @OneToOne(cascade = CascadeType.ALL)
+    @ManyToOne(cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     @JoinColumn(name = "address_id", referencedColumnName = "id")
-    public AddressDataSet address;
+    public AddressInfo address;
 
-    @OneToMany(cascade = CascadeType.ALL, orphanRemoval = true)
+    @OneToMany(cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
     public List<PhoneDataSet> phones;
 
     @Override
