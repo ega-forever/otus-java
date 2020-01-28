@@ -34,7 +34,7 @@ public class MainTest {
 
     @Test
     public void testUserModelInsert() {
-        HwCache<Integer, User> cache = new MyCache<>();
+        HwCache<String, User> cache = new MyCache<>();
         Repository<User> userRepositoryImpl = new UserRepositoryImpl(this.userSessionManager, cache);
 
         User newUser = new User("test_" + new Random().nextInt(), 12);
@@ -47,7 +47,7 @@ public class MainTest {
 
     @Test
     public void testUserModelQuery() {
-        HwCache<Integer, User> cache = new MyCache<>();
+        HwCache<String, User> cache = new MyCache<>();
         Repository<User> userRepositoryImpl = new UserRepositoryImpl(this.userSessionManager, cache);
 
         User newUser = new User("test_" + new Random().nextInt(), 12);
@@ -60,7 +60,7 @@ public class MainTest {
 
     @Test
     public void testUserModelUpdate() {
-        HwCache<Integer, User> cache = new MyCache<>();
+        HwCache<String, User> cache = new MyCache<>();
         Repository<User> userRepositoryImpl = new UserRepositoryImpl(this.userSessionManager, cache);
 
         User newUser = new User("test_" + new Random().nextInt(), 12);
@@ -76,12 +76,12 @@ public class MainTest {
 
     @Test
     public void testCacheCreate() {
-        HwCache<Integer, User> cache = new MyCache<>();
+        HwCache<String, User> cache = new MyCache<>();
         Repository<User> userRepositoryImpl = new UserRepositoryImpl(this.userSessionManager, cache);
 
-        AtomicReference<Integer> createActionId = new AtomicReference<>();
+        AtomicReference<String> createActionId = new AtomicReference<>();
 
-        HwListener<Integer, User> listener = (key, value, action) -> {
+        HwListener<String, User> listener = (key, value, action) -> {
             assertEquals(action, ListenerActions.INSERT.getAction());
             createActionId.set(key);
         };
@@ -90,21 +90,21 @@ public class MainTest {
 
         User newUser = new User("test_" + new Random().nextInt(), 12);
         userRepositoryImpl.insert(newUser);
-        assertEquals(createActionId.get(), newUser.id);
+        assertEquals(createActionId.get(), newUser.id.toString());
     }
 
     @Test
     public void testCacheUpdate() {
-        HwCache<Integer, User> cache = new MyCache<>();
+        HwCache<String, User> cache = new MyCache<>();
         Repository<User> userRepositoryImpl = new UserRepositoryImpl(this.userSessionManager, cache);
 
         User newUser = new User("test_" + new Random().nextInt(), 12);
         userRepositoryImpl.insert(newUser);
         User queriedUser = userRepositoryImpl.load(newUser.id, User.class);
 
-        AtomicReference<Integer> updateActionId = new AtomicReference<>();
+        AtomicReference<String> updateActionId = new AtomicReference<>();
 
-        HwListener<Integer, User> listener = (key, value, action) -> {
+        HwListener<String, User> listener = (key, value, action) -> {
             assertEquals(action, ListenerActions.INSERT.getAction());
             updateActionId.set(key);
         };
@@ -113,20 +113,20 @@ public class MainTest {
 
         queriedUser.age = 123;
         userRepositoryImpl.update(queriedUser);
-        assertEquals(updateActionId.get(), queriedUser.id);
+        assertEquals(updateActionId.get(), queriedUser.id.toString());
     }
 
     @Test
     public void testCacheSelect() {
-        HwCache<Integer, User> cache = new MyCache<>();
+        HwCache<String, User> cache = new MyCache<>();
         Repository<User> userRepositoryImpl = new UserRepositoryImpl(this.userSessionManager, cache);
 
         User newUser = new User("test_" + new Random().nextInt(), 12);
         userRepositoryImpl.insert(newUser);
 
-        AtomicReference<Integer> selectActionId = new AtomicReference<>();
+        AtomicReference<String> selectActionId = new AtomicReference<>();
 
-        HwListener<Integer, User> listener = (key, value, action) -> {
+        HwListener<String, User> listener = (key, value, action) -> {
             assertEquals(action, ListenerActions.SELECT.getAction());
             selectActionId.set(key);
         };
@@ -134,7 +134,7 @@ public class MainTest {
         cache.addListener(listener);
 
         User queriedUser = userRepositoryImpl.load(newUser.id, User.class);
-        assertEquals(selectActionId.get(), queriedUser.id);
+        assertEquals(selectActionId.get(), queriedUser.id.toString());
     }
 
 }

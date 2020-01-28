@@ -16,30 +16,27 @@ public class MyCache<K, V> implements HwCache<K, V> {
 
     @Override
     public void put(K key, V value) {
-        for (HwListener<K, V> listener : this.listeners) {
-            listener.notify(key, value, ListenerActions.INSERT.getAction());
-        }
-
         this.cache.put(key, value);
+        this.notifyAll(key, value, ListenerActions.INSERT);
     }
 
     @Override
     public void remove(K key) {
-        for (HwListener<K, V> listener : this.listeners) {
-            listener.notify(key, null, ListenerActions.DELETE.getAction());
-        }
-
         this.cache.remove(key);
+        this.notifyAll(key, null, ListenerActions.INSERT);
     }
 
     @Override
     public V get(K key) {
         V value = this.cache.get(key);
-
-        for (HwListener<K, V> listener : this.listeners) {
-            listener.notify(key, value, ListenerActions.SELECT.getAction());
-        }
+        this.notifyAll(key, value, ListenerActions.SELECT);
         return value;
+    }
+
+    private void notifyAll(K key, V value, ListenerActions action) {
+        for (HwListener<K, V> listener : this.listeners) {
+            listener.notify(key, value, action.getAction());
+        }
     }
 
     @Override
