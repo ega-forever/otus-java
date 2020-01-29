@@ -1,5 +1,7 @@
 package ru.otus.cachehw;
 
+import org.slf4j.Logger;
+
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -11,8 +13,14 @@ import java.util.WeakHashMap;
  */
 public class MyCache<K, V> implements HwCache<K, V> {
 
-    Map<K, V> cache = new WeakHashMap<>();
-    List<HwListener<K, V>> listeners = new ArrayList<>();
+    private Map<K, V> cache = new WeakHashMap<>();
+    private List<HwListener<K, V>> listeners = new ArrayList<>();
+    private Logger logger;
+
+    public MyCache(Logger logger) {
+        this.logger = logger;
+    }
+
 
     @Override
     public void put(K key, V value) {
@@ -35,7 +43,11 @@ public class MyCache<K, V> implements HwCache<K, V> {
 
     private void notifyAll(K key, V value, ListenerActions action) {
         for (HwListener<K, V> listener : this.listeners) {
-            listener.notify(key, value, action.getAction());
+            try {
+                listener.notify(key, value, action.getAction());
+            } catch (Exception e) {
+                logger.error(e.toString());
+            }
         }
     }
 

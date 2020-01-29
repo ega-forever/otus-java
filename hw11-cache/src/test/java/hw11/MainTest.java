@@ -2,6 +2,8 @@ package hw11;
 
 import org.hibernate.SessionFactory;
 import org.junit.jupiter.api.*;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import ru.otus.cachehw.HwCache;
 import ru.otus.cachehw.HwListener;
 import ru.otus.cachehw.ListenerActions;
@@ -25,16 +27,18 @@ import static org.junit.jupiter.api.Assertions.assertNotEquals;
 public class MainTest {
 
     private SessionManagerHibernate userSessionManager;
+    private Logger logger;
 
     @BeforeAll
     public void init() {
         SessionFactory userSessionFactory = HibernateUtils.buildSessionFactory("hibernate.cfg.xml", User.class, AddressInfo.class, PhoneDataSet.class);
         this.userSessionManager = new SessionManagerHibernate(userSessionFactory);
+        this.logger = LoggerFactory.getLogger(MainTest.class);
     }
 
     @Test
     public void testUserModelInsert() {
-        HwCache<String, User> cache = new MyCache<>();
+        HwCache<String, User> cache = new MyCache<>(logger);
         Repository<User> userRepositoryImpl = new UserRepositoryImpl(this.userSessionManager, cache);
 
         User newUser = new User("test_" + new Random().nextInt(), 12);
@@ -47,7 +51,7 @@ public class MainTest {
 
     @Test
     public void testUserModelQuery() {
-        HwCache<String, User> cache = new MyCache<>();
+        HwCache<String, User> cache = new MyCache<>(logger);
         Repository<User> userRepositoryImpl = new UserRepositoryImpl(this.userSessionManager, cache);
 
         User newUser = new User("test_" + new Random().nextInt(), 12);
@@ -60,7 +64,7 @@ public class MainTest {
 
     @Test
     public void testUserModelUpdate() {
-        HwCache<String, User> cache = new MyCache<>();
+        HwCache<String, User> cache = new MyCache<>(logger);
         Repository<User> userRepositoryImpl = new UserRepositoryImpl(this.userSessionManager, cache);
 
         User newUser = new User("test_" + new Random().nextInt(), 12);
@@ -76,7 +80,7 @@ public class MainTest {
 
     @Test
     public void testCacheCreate() {
-        HwCache<String, User> cache = new MyCache<>();
+        HwCache<String, User> cache = new MyCache<>(logger);
         Repository<User> userRepositoryImpl = new UserRepositoryImpl(this.userSessionManager, cache);
 
         AtomicReference<String> createActionId = new AtomicReference<>();
@@ -95,7 +99,7 @@ public class MainTest {
 
     @Test
     public void testCacheUpdate() {
-        HwCache<String, User> cache = new MyCache<>();
+        HwCache<String, User> cache = new MyCache<>(logger);
         Repository<User> userRepositoryImpl = new UserRepositoryImpl(this.userSessionManager, cache);
 
         User newUser = new User("test_" + new Random().nextInt(), 12);
@@ -118,7 +122,7 @@ public class MainTest {
 
     @Test
     public void testCacheSelect() {
-        HwCache<String, User> cache = new MyCache<>();
+        HwCache<String, User> cache = new MyCache<>(logger);
         Repository<User> userRepositoryImpl = new UserRepositoryImpl(this.userSessionManager, cache);
 
         User newUser = new User("test_" + new Random().nextInt(), 12);
