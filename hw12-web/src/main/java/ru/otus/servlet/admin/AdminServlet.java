@@ -15,7 +15,7 @@ import java.util.Map;
 
 public class AdminServlet extends HttpServlet {
 
-    private static final String USERS_PAGE_TEMPLATE = "admin/main.html";
+    private static final String USERS_PAGE_TEMPLATE = "admin/index.html";
     private static final String TEMPLATE_ATTR_USER = "user";
 
     private final UserDao userDao;

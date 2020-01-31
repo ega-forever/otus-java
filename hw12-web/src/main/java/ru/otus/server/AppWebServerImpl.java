@@ -18,8 +18,9 @@ import ru.otus.servlet.LoginServlet;
 import ru.otus.servlet.admin.AdminApiUserServlet;
 import ru.otus.servlet.admin.AdminApiUsersServlet;
 import ru.otus.servlet.admin.AdminServlet;
-import ru.otus.servlet.user.UsersServlet;
+import ru.otus.servlet.user.UserServlet;
 
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.stream.IntStream;
@@ -87,7 +88,7 @@ public class AppWebServerImpl implements AppWebServer {
 
     private ServletContextHandler createServletContextHandler() {
         ServletContextHandler servletContextHandler = new ServletContextHandler(ServletContextHandler.SESSIONS);
-        servletContextHandler.addServlet(new ServletHolder(new UsersServlet(templateProcessor, userDao)), "/users");
+        servletContextHandler.addServlet(new ServletHolder(new UserServlet(templateProcessor, userDao)), "/user");
 
         servletContextHandler.addServlet(new ServletHolder(new AdminServlet(templateProcessor, userDao)), "/admin");
         servletContextHandler.addServlet(new ServletHolder(new AdminApiUsersServlet(userDao, gson)), "/api/admin/users");
@@ -98,7 +99,7 @@ public class AppWebServerImpl implements AppWebServer {
     private Handler applySecurity(ServletContextHandler servletContextHandler) {
         servletContextHandler.addServlet(new ServletHolder(new LoginServlet(templateProcessor, userAuthServiceForFilterBasedSecurity)), "/login");
 
-        applyFilterBasedSecurity(servletContextHandler, new String[]{"/users"}, Collections.singletonList(Roles.USER.getType()));
+        applyFilterBasedSecurity(servletContextHandler, new String[]{"/user"}, Arrays.asList(Roles.USER.getType(), Roles.ADMIN.getType()));
         applyFilterBasedSecurity(servletContextHandler, new String[]{"/admin", "/api/admin/*"}, Collections.singletonList(Roles.ADMIN.getType()));
         return servletContextHandler;
     }

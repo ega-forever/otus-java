@@ -1,13 +1,59 @@
-﻿<html xmlns="http://www.w3.org/1999/xhtml" content="text/html;">
+﻿<html lang="en">
 <head>
-    <title>Index</title>
+    <meta charset="utf-8">
+    <title>Web App</title>
+
+    <link rel="canonical" href="https://getbootstrap.com/docs/4.4/examples/cover/">
+
+    <!-- Bootstrap core CSS -->
+    <link href="css/bootstrap.css" rel="stylesheet">
+
+    <style>
+      .bd-placeholder-img {
+        font-size: 1.125rem;
+        text-anchor: middle;
+        -webkit-user-select: none;
+        -moz-user-select: none;
+        -ms-user-select: none;
+        user-select: none;
+      }
+
+      @media (min-width: 768px) {
+        .bd-placeholder-img-lg {
+          font-size: 3.5rem;
+        }
+      }
+    </style>
+    <!-- Custom styles for this template -->
+    <link href="css/cover.css" rel="stylesheet">
 </head>
-<body>
-<div class="top">
-    <img src="img/logo.svg" style="width: 300px; height: 300px">
-    <br/>
-    <h3>Добро пожаловать на стартовую страницу примера</h3>
-    <a href="users">Перейти на странцу информации о пользователях (защищено паролем)</a>
+<body class="text-center">
+<div class="cover-container d-flex w-100 h-100 p-3 mx-auto flex-column">
+    <header class="masthead mb-auto">
+        <div class="inner">
+            <h3 class="masthead-brand">Web App</h3>
+            <nav class="nav nav-masthead justify-content-center">
+                <a class="nav-link active" href="#">Home</a>
+                <a class="nav-link" href="#">Features</a>
+                <a class="nav-link" href="#">Contact</a>
+            </nav>
+        </div>
+    </header>
+
+    <main role="main" class="inner cover">
+        <h1 class="cover-heading">Users Web App.</h1>
+        <p class="lead">Cover is a one-page template for building simple and beautiful home pages. Download, edit the text, and add your own fullscreen background photo to make it your own.</p>
+        <p class="lead">
+            <a href="/user" class="btn btn-lg btn-secondary">User</a>
+            <a href="/admin" class="btn btn-lg btn-secondary">Admin</a>
+        </p>
+    </main>
+
+    <footer class="mastfoot mt-auto">
+        <div class="inner">
+            <p>Web app 2020</p>
+        </div>
+    </footer>
 </div>
 </body>
 </html>

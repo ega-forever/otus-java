@@ -36,14 +36,14 @@ public class AuthorizationFilter implements Filter {
         HttpSession session = request.getSession(false);
 
         if (session == null) {
-            response.sendRedirect("/login");
+            response.sendRedirect("/login?redirect=" + uri);
             return;
         }
 
         String currentRole = (String) session.getAttribute(SessionAttributes.ROLE.getType());
 
         if (!this.roles.contains(currentRole)) {
-            response.sendRedirect("/login");
+            response.sendRedirect("/login?redirect=" + uri);
         } else {
             filterChain.doFilter(servletRequest, servletResponse);
         }

@@ -13,15 +13,15 @@ import java.util.HashMap;
 import java.util.Map;
 
 
-public class UsersServlet extends HttpServlet {
+public class UserServlet extends HttpServlet {
 
-    private static final String USERS_PAGE_TEMPLATE = "user/users.html";
+    private static final String USERS_PAGE_TEMPLATE = "user/index.html";
     private static final String TEMPLATE_ATTR_USER = "user";
 
     private final UserDao userDao;
     private final TemplateProcessor templateProcessor;
 
-    public UsersServlet(TemplateProcessor templateProcessor, UserDao userDao) {
+    public UserServlet(TemplateProcessor templateProcessor, UserDao userDao) {
         this.templateProcessor = templateProcessor;
         this.userDao = userDao;
     }
@@ -31,8 +31,6 @@ public class UsersServlet extends HttpServlet {
 
         HttpSession session = req.getSession(false);
         Object userId = session.getAttribute(SessionAttributes.USER_ID.getType());
-        System.out.println("userId: " + userId);
-
 
         Map<String, Object> paramsMap = new HashMap<>();
         userDao.findById((Long) userId).ifPresent(user -> paramsMap.put(TEMPLATE_ATTR_USER, user));
