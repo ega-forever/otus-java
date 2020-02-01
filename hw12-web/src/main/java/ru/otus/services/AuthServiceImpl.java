@@ -13,8 +13,8 @@ public class AuthServiceImpl implements AuthService {
     @Override
     public AuthServiceResult authenticate(String login, String password) {
         return userDao.findByLogin(login)
-                .filter(user -> user.getPassword().equals(password))
-                .map(user-> new AuthServiceResult(user.getId(), user.getRole()))
+                .filter(user -> user.password.equals(password))
+                .map(user-> new AuthServiceResult(user.id, user.role))
                 .orElse(null);
     }
 

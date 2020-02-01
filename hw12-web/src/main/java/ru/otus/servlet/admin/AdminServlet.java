@@ -31,8 +31,6 @@ public class AdminServlet extends HttpServlet {
 
         HttpSession session = req.getSession(false);
         Object userId = session.getAttribute(SessionAttributes.USER_ID.getType());
-        System.out.println("userId: " + userId);
-
 
         Map<String, Object> paramsMap = new HashMap<>();
         userDao.findById((Long) userId).ifPresent(user -> paramsMap.put(TEMPLATE_ATTR_USER, user));

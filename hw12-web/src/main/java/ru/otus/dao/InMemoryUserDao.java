@@ -27,7 +27,7 @@ public class InMemoryUserDao implements UserDao {
 
     @Override
     public Optional<User> findByLogin(String login) {
-        return users.values().stream().filter(v -> v.getLogin().equals(login)).findFirst();
+        return users.values().stream().filter(v -> v.login.equals(login)).findFirst();
     }
 
     @Override
@@ -37,8 +37,8 @@ public class InMemoryUserDao implements UserDao {
 
     @Override
     public Optional<User> save(User user) {
-        user.setId((long) this.users.keySet().size() + 1);
-        this.users.put(user.getId(), user);
+        user.id = (long) this.users.keySet().size() + 1;
+        this.users.put(user.id, user);
         return Optional.of(user);
     }
 }
