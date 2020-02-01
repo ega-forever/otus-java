@@ -55,6 +55,7 @@ public class LoginServlet extends HttpServlet {
             String redirectUri = request.getParameter(PARAM_REDIRECT);
 
             if (redirectUri != null) {
+                System.out.println("going to redirect: " + redirectUri);
                 response.sendRedirect(redirectUri);
                 return;
             }
@@ -67,6 +68,7 @@ public class LoginServlet extends HttpServlet {
             response.sendRedirect("/user");
         } else {
             response.setStatus(SC_UNAUTHORIZED);
+            response.sendRedirect("/login");
         }
 
     }

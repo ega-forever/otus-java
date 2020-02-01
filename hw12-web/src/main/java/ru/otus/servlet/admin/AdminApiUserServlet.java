@@ -38,8 +38,6 @@ public class AdminApiUserServlet extends HttpServlet {
                 jb.append(line);
         } catch (Exception e) { /*report an error*/ }
 
-        System.out.println("super: " + jb.toString());
-
         JsonParser parser = new JsonParser();
         JsonObject o = parser.parse(jb.toString()).getAsJsonObject();
 

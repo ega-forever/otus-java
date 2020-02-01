@@ -15,7 +15,7 @@ public class AuthServiceImpl implements AuthService {
         return userDao.findByLogin(login)
                 .filter(user -> user.getPassword().equals(password))
                 .map(user-> new AuthServiceResult(user.getId(), user.getRole()))
-                .get();
+                .orElse(null);
     }
 
 }

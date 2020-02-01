@@ -1,36 +1,105 @@
-﻿<html xmlns="http://www.w3.org/1999/xhtml" content="text/html;">
+﻿<html lang="en">
 <head>
-    <title>Main</title>
-    <script src="js/admin/utils.js"></script>
+    <meta charset="utf-8">
+    <title>Web App</title>
+
+    <link rel="canonical" href="https://getbootstrap.com/docs/4.4/examples/cover/">
+
+    <!-- Bootstrap core CSS -->
+    <link href="css/bootstrap.css" rel="stylesheet">
+
+    <style>
+      .bd-placeholder-img {
+        font-size: 1.125rem;
+        text-anchor: middle;
+        -webkit-user-select: none;
+        -moz-user-select: none;
+        -ms-user-select: none;
+        user-select: none;
+      }
+
+      @media (min-width: 768px) {
+        .bd-placeholder-img-lg {
+          font-size: 3.5rem;
+        }
+      }
+
+
+
+    </style>
+    <!-- Custom styles for this template -->
+    <link href="css/cover.css" rel="stylesheet">
+    <script src="js/admin/main.js"></script>
 </head>
-<body>
-<div class="top">
-    <img src="img/login.png">
-    <br/>
-    <p>admin name: ${user.name}</p>
+<body class="text-center">
+<div class="cover-container d-flex w-100 h-100 p-3 mx-auto flex-column">
+    <header class="masthead mb-auto">
+        <div class="inner">
+            <h3 class="masthead-brand">Web App</h3>
+            <nav class="nav nav-masthead justify-content-center">
+                <a class="nav-link" href="/">Home</a>
+                <a class="nav-link" href="/user">User</a>
+                <a class="nav-link active" href="/admin">Admin</a>
+            </nav>
+        </div>
+    </header>
+
+    <div class="container">
+
+        <div class="row">
+            <div class="col-md-3">
+                <form>
+                    <div class="form-group">
+                        <label for="login">Login</label>
+                        <input type="text" class="form-control" id="login">
+                    </div>
+                    <div class="form-group">
+                        <label for="name">Name</label>
+                        <input type="text" class="form-control" id="name">
+                    </div>
+                    <div class="form-group">
+                        <label for="password">Password</label>
+                        <input type="password" class="form-control" name="password" id="password">
+                    </div>
+                    <div class="form-group">
+                        <label for="role">Role</label>
+                        <select class="custom-select" id="role" name="role">
+                            <option selected>Choose...</option>
+                            <option value="USER">User</option>
+                            <option value="ADMIN">Admin</option>
+                        </select>
+                    </div>
+                    <button type="button" class="btn btn-primary" onclick="addUser()">Create</button>
+                </form>
+            </div>
+            <div class="col-md-9">
+                <table class="table table-dark">
+                    <thead>
+                    <tr>
+                        <th>Id</th>
+                        <th>Name</th>
+                        <th>Login</th>
+                        <th>Role</th>
+                    </tr>
+                    </thead>
+                    <tbody id="content">
+                    <tr>
+                        <td></td>
+                        <td></td>
+                        <td></td>
+                        <td></td>
+                    </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <footer class="mastfoot mt-auto">
+        <div class="inner">
+            <p>Web app 2020</p>
+        </div>
+    </footer>
 </div>
-
-
-<h4>Случайный пользователь</h4>
-<table style="width: 400px">
-    <thead>
-    <tr>
-        <td style="width: 50px">Id</td>
-        <td style="width: 150px">Имя</td>
-        <td style="width: 100px">Логин</td>
-        <td style="width: 100px">Роль</td>
-    </tr>
-    </thead>
-    <tbody id="content">
-    <tr >
-        <td></td>
-        <td></td>
-        <td></td>
-        <td></td>
-    </tr>
-    </tbody>
-</table>
-
-
 </body>
 </html>
