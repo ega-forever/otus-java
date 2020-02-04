@@ -11,7 +11,6 @@ import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Optional;
 
 
 public class AdminApiUsersServlet extends HttpServlet {
@@ -26,15 +25,11 @@ public class AdminApiUsersServlet extends HttpServlet {
 
     @Override
     protected void doGet(HttpServletRequest request, HttpServletResponse response) throws IOException {
-        Optional<Collection<User>> users = userDao.findAll();
-
-        if(users.isEmpty()){
-            users = Optional.of(new ArrayList<>());
-        }
+        Collection<User> users = userDao.findAll().orElse(new ArrayList<>());
 
         response.setContentType("application/json;charset=UTF-8");
         ServletOutputStream out = response.getOutputStream();
-        out.print(gson.toJson(users.get()));
+        out.print(gson.toJson(users));
     }
 
 }

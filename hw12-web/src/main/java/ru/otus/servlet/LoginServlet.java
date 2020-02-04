@@ -49,8 +49,8 @@ public class LoginServlet extends HttpServlet {
         if (result != null) {
             HttpSession session = request.getSession();
             session.setMaxInactiveInterval(MAX_INACTIVE_INTERVAL);
-            session.setAttribute(SessionAttributes.USER_ID.getType(), result.id);
-            session.setAttribute(SessionAttributes.ROLE.getType(), result.role);
+            session.setAttribute(SessionAttributes.USER_ID.getType(), result.getId());
+            session.setAttribute(SessionAttributes.ROLE.getType(), result.getRole());
 
             String redirectUri = request.getParameter(PARAM_REDIRECT);
 
@@ -59,7 +59,7 @@ public class LoginServlet extends HttpServlet {
                 return;
             }
 
-            if (Roles.ADMIN.getType().equals(result.role)) {
+            if (Roles.ADMIN.getType().equals(result.getRole())) {
                 response.sendRedirect("/admin");
                 return;
             }
