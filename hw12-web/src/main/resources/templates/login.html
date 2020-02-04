@@ -1,0 +1,65 @@
+﻿<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <title>Web App</title>
+
+    <link rel="canonical" href="https://getbootstrap.com/docs/4.4/examples/cover/">
+
+    <!-- Bootstrap core CSS -->
+    <link href="css/bootstrap.css" rel="stylesheet">
+
+    <style>
+      .bd-placeholder-img {
+        font-size: 1.125rem;
+        text-anchor: middle;
+        -webkit-user-select: none;
+        -moz-user-select: none;
+        -ms-user-select: none;
+        user-select: none;
+      }
+
+      @media (min-width: 768px) {
+        .bd-placeholder-img-lg {
+          font-size: 3.5rem;
+        }
+      }
+    </style>
+    <!-- Custom styles for this template -->
+    <link href="css/cover.css" rel="stylesheet">
+    <script src="js/login/main.js"></script>
+</head>
+<body class="text-center">
+<div class="cover-container d-flex w-100 h-100 p-3 mx-auto flex-column">
+    <header class="masthead mb-auto">
+        <div class="inner">
+            <h3 class="masthead-brand">Web App</h3>
+            <nav class="nav nav-masthead justify-content-center">
+                <a class="nav-link" href="/">Home</a>
+                <a class="nav-link" href="/user">User</a>
+                <a class="nav-link" href="/admin">Admin</a>
+            </nav>
+        </div>
+    </header>
+
+    <main role="main" class="inner cover">
+        <form action="login" method="post" class="form-signin">
+            <h1 class="h3 mb-3 font-weight-normal">Please sign in</h1>
+            <label class="sr-only">Email address</label>
+            <input type="text" name="login" class="form-control" placeholder="user login" required autofocus>
+
+            <label class="sr-only">Password</label>
+            <input type="password" name="password" class="form-control" placeholder="Password" required>
+
+            <input id="redirect" type="hidden" name="redirect" value="">
+            <input type="submit" class="btn btn-lg btn-primary btn-block" value="sign in">
+        </form>
+    </main>
+
+    <footer class="mastfoot mt-auto">
+        <div class="inner">
+            <p>Web app 2020</p>
+        </div>
+    </footer>
+</div>
+</body>
+</html>
